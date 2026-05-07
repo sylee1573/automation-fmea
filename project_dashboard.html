@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>표준류 시스템 — 프로젝트 현황</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Malgun Gothic',-apple-system,sans-serif;background:#0b1120;color:#e2e8f0;padding:24px 20px;min-height:100vh}
+a{color:inherit}
+.wrap{max-width:1200px;margin:0 auto}
+
+/* Header */
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+.hdr h1{font-size:20px;font-weight:700;color:#f8fafc}
+.hdr .sub{font-size:12px;color:#475569;margin-top:4px}
+.hdr .ts{font-size:11px;color:#475569;text-align:right;line-height:1.6}
+
+/* Stat row */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat{background:#1e293b;border:1px solid #2d3f55;border-radius:12px;padding:18px;text-align:center}
+.stat .val{font-size:30px;font-weight:700}
+.stat .lbl{font-size:11px;color:#64748b;margin-top:3px}
+
+/* Overall progress */
+.overall{background:#1e293b;border:1px solid #2d3f55;border-radius:12px;padding:18px;margin-bottom:20px}
+.overall .otitle{font-size:13px;color:#94a3b8;margin-bottom:10px}
+.otrack{background:#0b1120;border-radius:9999px;height:18px;overflow:hidden}
+.ofill{height:100%;background:linear-gradient(90deg,#3b82f6,#22c55e);border-radius:9999px}
+.opct{font-size:12px;color:#64748b;margin-top:6px;text-align:right}
+
+/* Action box */
+.action-box{background:#1a1208;border:1px solid #f59e0b50;border-radius:12px;padding:18px;margin-bottom:20px}
+.action-box h2{font-size:14px;color:#fbbf24;margin-bottom:10px}
+.action-box ul{padding-left:16px}
+.action-box li{font-size:12px;color:#d6d3d1;padding:3px 0;line-height:1.5}
+.phase-tag{background:#334155;color:#94a3b8;font-size:10px;padding:1px 6px;border-radius:4px;margin-right:6px}
+
+/* Filter */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.fb{padding:5px 14px;border-radius:9999px;border:1px solid #334155;background:#1e293b;
+     color:#94a3b8;font-size:11px;cursor:pointer;font-family:inherit;transition:.15s}
+.fb:hover,.fb.on{background:#334155;color:#f1f5f9}
+
+/* Grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:18px}
+
+/* Card */
+.card{background:#1e293b;border:1px solid #2d3f55;border-radius:12px;padding:18px;transition:.2s}
+.card:hover{border-color:#475569}
+.card[data-status=complete]{border-color:#22c55e28}
+.card[data-status=partial]{border-color:#f59e0b28}
+.card[data-status=optional]{border-color:#a78bfa28}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
+.ctitle{font-size:13px;font-weight:600;color:#f1f5f9;line-height:1.4}
+.badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:9999px;white-space:nowrap;flex-shrink:0}
+
+/* Progress */
+.prog-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.prog-track{flex:1;background:#0b1120;border-radius:9999px;height:5px;overflow:hidden}
+.prog-fill{height:100%;border-radius:9999px}
+.prog-txt{font-size:10px;color:#64748b;white-space:nowrap}
+
+/* Task list */
+.tlist{list-style:none;font-size:11px;line-height:1.6}
+.tlist li{padding:2px 0;border-bottom:1px solid #0b112020}
+.t-done{color:#64748b}
+.t-pend{color:#94a3b8}
+.t-pre{color:#fb923c}
+.t-human{color:#fbbf24;font-weight:500}
+.t-todo{color:#6b7280;font-style:italic}
+.sec-label{font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.06em;
+           padding-top:8px;margin-top:4px;border-top:1px solid #334155;list-style:none}
+
+@media(max-width:700px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <div>
+    <h1>🏭 표준류 자동생성 시스템 — 프로젝트 현황</h1>
+    <div class="sub">자동차 부품 제조사용 FMEA · Control Plan · 작업표준서 · 자주검사항목 자동생성</div>
+  </div>
+  <div class="ts">🕐 2026년 05월 07일 19:47<br>구현계획.md 기준 자동 분석</div>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="val" style="color:#22c55e">2</div>
+    <div class="lbl">완료된 Phase</div>
+  </div>
+  <div class="stat">
+    <div class="val" style="color:#f59e0b">4</div>
+    <div class="lbl">진행중 / 대기 Phase</div>
+  </div>
+  <div class="stat">
+    <div class="val" style="color:#3b82f6">36</div>
+    <div class="lbl">완료 태스크</div>
+  </div>
+  <div class="stat">
+    <div class="val" style="color:#94a3b8">14</div>
+    <div class="lbl">남은 태스크</div>
+  </div>
+</div>
+
+<div class="overall">
+  <div class="otitle">전체 구현 진행률</div>
+  <div class="otrack"><div class="ofill" style="width:72%"></div></div>
+  <div class="opct">36 / 50 항목 완료 &nbsp;|&nbsp; <strong>72%</strong></div>
+</div>
+
+<div class="action-box"><h2>📋 지금 당장 필요한 담당자 실행 항목</h2><ul><li><span class="phase-tag">Phase 0</span> 품질 담당자 검토 결과 메모 (합격 기준: 실무 사용 가능 여부, 정량 기준: 주요 고장유형 80% 이상 포함)</li><li><span class="phase-tag">Phase 1</span> 담당자: --dir &lt;공유서버경로&gt;로 excel_scanner.py 실행 → tagged → graded 순서로 처리</li><li><span class="phase-tag">Phase 1</span> 품질 등급 A/B/C 분류 결과 담당자 확인 → A·B 등급만 Vector DB 투입 확정</li><li><span class="phase-tag">Phase 2</span> 담당자: backend/wiki/raw/ 폴더에 AIAG/IATF/CSR 문서 수집 후 --build 실행</li><li><span class="phase-tag">Phase 3</span> 담당자 실행 필요: Phase 1 graded CSV 준비 후 아래 명령 실행</li></ul></div>
+
+<div class="filters">
+  <button class="fb on" onclick="filter(this,'all')">전체 보기</button>
+  <button class="fb" onclick="filter(this,'complete')">✅ 완료</button>
+  <button class="fb" onclick="filter(this,'partial')">🔄 진행중</button>
+  <button class="fb" onclick="filter(this,'pending')">⏳ 대기중</button>
+  <button class="fb" onclick="filter(this,'optional')">⚙️ 선택사항</button>
+</div>
+
+<div class="grid" id="grid">
+
+    <div class="card" data-status="partial">
+      <div class="card-head">
+        <span class="ctitle">Phase 0 — 핵심 가설 검증 스프린트 (1~2주)</span>
+        <span class="badge" style="background:#f59e0b18;color:#f59e0b;border:1px solid #f59e0b40">🔄 진행중</span>
+      </div>
+      
+        <div class="prog-row">
+          <div class="prog-track"><div class="prog-fill" style="width:66%;background:#f59e0b"></div></div>
+          <span class="prog-txt">2/3 (66%)</span>
+        </div>
+      <ul class='tlist'><li class="t-done">✅ poc/fmea_poc.py — AIAG-VDA 1st Ed. 표준 23컬럼 양식 적용</li><li class="t-done">✅ Vision 파싱 테스트 — PHC Valeo 도면 5장(CAD 원본 PDF) 테스트 완료</li><li class="sec-label">👤 담당자 실행 필요</li><li class="t-human">▶ 품질 담당자 검토 결과 메모 (합격 기준: 실무 사용 가능 여부, 정량 기준: 주요 고장유형 80% 이상 포함)</li></ul>
+    </div>
+
+    <div class="card" data-status="partial">
+      <div class="card-head">
+        <span class="ctitle">Phase 1 — 데이터 수집·분류 + 품질 필터링 (2~3주)</span>
+        <span class="badge" style="background:#f59e0b18;color:#f59e0b;border:1px solid #f59e0b40">🔄 진행중</span>
+      </div>
+      
+        <div class="prog-row">
+          <div class="prog-track"><div class="prog-fill" style="width:50%;background:#f59e0b"></div></div>
+          <span class="prog-txt">3/6 (50%)</span>
+        </div>
+      <ul class='tlist'><li class="t-done">✅ backend/preprocessing/excel_scanner.py — 공유서버 폴더 스캔, 메타데이터 자동 추출</li><li class="t-done">✅ backend/preprocessing/metadata_tagger.py — 공장명/공정유형/고객사/연도 자동 태깅 (claude-haiku-4-5)</li><li class="t-done">✅ backend/preprocessing/quality_filter.py — 저품질 FMEA 제외 기준 적용 + A/B/C 등급 분류</li><li class="sec-label">미완료 항목</li><li class="t-pend">🔲 backend/preprocessing/excel_layout_classifier.py — FMEA 레이아웃 분류기 (Phase 1 선행 구축)</li><li class="sec-label">👤 담당자 실행 필요</li><li class="t-human">▶ 담당자: --dir &lt;공유서버경로&gt;로 excel_scanner.py 실행 → tagged → graded 순서로 처리</li><li class="t-human">▶ 품질 등급 A/B/C 분류 결과 담당자 확인 → A·B 등급만 Vector DB 투입 확정</li></ul>
+    </div>
+
+    <div class="card" data-status="partial">
+      <div class="card-head">
+        <span class="ctitle">Phase 2 — 전처리 + LLM Wiki 구축 (3~4주)</span>
+        <span class="badge" style="background:#f59e0b18;color:#f59e0b;border:1px solid #f59e0b40">🔄 진행중</span>
+      </div>
+      
+        <div class="prog-row">
+          <div class="prog-track"><div class="prog-fill" style="width:60%;background:#f59e0b"></div></div>
+          <span class="prog-txt">3/5 (60%)</span>
+        </div>
+      <ul class='tlist'><li class="t-done">✅ backend/preprocessing/excel_parser.py — 셀병합 해제, 버전별 컬럼 통일 매핑</li><li class="t-done">✅ backend/preprocessing/pdf_parser.py — 도면에서 치수/공차/재질 추출</li><li class="t-done">✅ backend/wiki/wiki_agent.py — LLM Wiki Agent (Karpathy 패턴)</li><li class="sec-label">미완료 항목</li><li class="t-pend">🔲 코드 서명 인증서 신청 선행 — Phase 5-B 완료 4주 전 신청 필수 (GlobalSign/Sectigo EV, 발급 2~3주, 연 $300~400)</li><li class="sec-label">👤 담당자 실행 필요</li><li class="t-human">▶ 담당자: backend/wiki/raw/ 폴더에 AIAG/IATF/CSR 문서 수집 후 --build 실행</li><li class="sec-label">📌 TODO 주의사항</li><li class="t-todo">[TODO-CODESIGN-CORP] 신청 전 법인 여부 먼저 확인. EV는 법인 사업자만 가능. 개인/1인 사업자는 OV(일반) 코드 서명으로 신청. OV도 백신 오탐 상당수 해결되나 SmartS…</li></ul>
+    </div>
+
+    <div class="card" data-status="partial">
+      <div class="card-head">
+        <span class="ctitle">Phase 3 — Vector DB 구축 (2~3주)</span>
+        <span class="badge" style="background:#f59e0b18;color:#f59e0b;border:1px solid #f59e0b40">🔄 진행중</span>
+      </div>
+      
+        <div class="prog-row">
+          <div class="prog-track"><div class="prog-fill" style="width:33%;background:#f59e0b"></div></div>
+          <span class="prog-txt">4/12 (33%)</span>
+        </div>
+      <ul class='tlist'><li class="t-done">✅ backend/rag/vector_db.py — sqlite-vec 로컬 단일 파일 (Chroma 대체, 50K벡터 검색 ~50ms)</li><li class="t-done">✅ backend/rag/embeddings.py — 임베딩 모델 (한/영 혼용 대응)</li><li class="t-done">✅ backend/rag/retriever.py — 공정유형/공장유형 메타 필터 + 시맨틱 검색 + 프롬프트 주입 포맷</li><li class="t-done">✅ backend/rag/indexer.py — A/B 등급 graded CSV → sqlite-vec 일괄 인덱싱 파이프라인</li><li class="sec-label">미완료 항목</li><li class="t-pend">🔲 Recall@5 측정 필수 — 한국어·영문·혼용 3종 쿼리 각각 70% 이상 확인 후 Phase 4 진행</li><li class="t-pend">🔲 backend/wiki/raw/ — AIAG &amp; VDA FMEA 1st Ed. 원본 PDF (aiag.org 구매, ~$225)</li><li class="t-pend">🔲 backend/wiki/raw/ — IATF 16949 원본 PDF (ISO/IATF 공식 사이트 구매)</li><li class="t-pend">🔲 backend/wiki/raw/ — 현대/기아 CSR 원본 (고객사 SQE에게 직접 수령)</li><li class="t-pend">🔲 Phase 1 실행 — 공유서버 폴더에서 excel_scanner.py --dir \\서버\폴더 실행</li><li class="t-pend">🔲 Phase 3 실제 인덱싱 — graded CSV 준비 후 indexer.py 실행</li><li class="sec-label">사전 필수 확인</li><li class="t-pre">⚠️ [사전 필수] sqlite-vec Windows + PyInstaller 번들링 테스트 — Phase 3 코딩 시작 전 1일</li><li class="sec-label">👤 담당자 실행 필요</li><li class="t-human">▶ 담당자 실행 필요: Phase 1 graded CSV 준비 후 아래 명령 실행</li></ul>
+    </div>
+
+    <div class="card" data-status="complete">
+      <div class="card-head">
+        <span class="ctitle">Phase 4 — Multi-Agent 구성 (3~4주)</span>
+        <span class="badge" style="background:#22c55e18;color:#22c55e;border:1px solid #22c55e40">✅ 완료</span>
+      </div>
+      
+        <div class="prog-row">
+          <div class="prog-track"><div class="prog-fill" style="width:100%;background:#22c55e"></div></div>
+          <span class="prog-txt">11/11 (100%)</span>
+        </div>
+      <ul class='tlist'><li class="t-done">✅ backend/agents/__init__.py</li><li class="t-done">✅ backend/agents/orchestrator.py — GenerationOptions, run_sequential, _compress (CC/SC 강제보존)</li><li class="t-done">✅ backend/agents/fmea_agent.py — claude-sonnet-4-6, 프롬프트 캐싱</li><li class="t-done">✅ backend/agents/cp_agent.py — claude-haiku-4-5-20251001</li><li class="t-done">✅ backend/agents/work_standard_agent.py — claude-haiku-4-5-20251001</li><li class="t-done">✅ backend/agents/inspection_agent.py — claude-haiku-4-5-20251001</li><li class="t-done">✅ backend/validators/__init__.py</li><li class="t-done">✅ backend/validators/consistency_checker.py — [FMEA_CP]/[CP_WS]/[CP_INSP] 타입 불일치 검출</li><li class="t-done">✅ backend/output/__init__.py</li><li class="t-done">✅ backend/output/excel_generator.py — 4종 Excel (FMEA 23컬럼 + CP + WS + 자주검사)</li><li class="t-done">✅ backend/output/templates/ — 고객사 양식 보관 폴더 (빈 폴더)</li><li class="sec-label">📌 TODO 주의사항</li><li class="t-todo">[TODO-HAIKU-QA] Phase 4 코딩 시작 전 1일: CP·작업표준서 Haiku 품질 검증 필수</li><li class="t-todo">[TODO-COMPRESSOR-CC] 압축기(`compress_for_next_agent`) 구현 시 필수:</li><li class="t-todo">[TODO-PERF-SCAN] 스캔 도면 실측 후 90초 초과 시:</li></ul>
+    </div>
+
+    <div class="card" data-status="complete">
+      <div class="card-head">
+        <span class="ctitle">Phase 5 — 챗봇 UI + 배포 (4~5주)</span>
+        <span class="badge" style="background:#22c55e18;color:#22c55e;border:1px solid #22c55e40">✅ 완료</span>
+      </div>
+      
+        <div class="prog-row">
+          <div class="prog-track"><div class="prog-fill" style="width:100%;background:#22c55e"></div></div>
+          <span class="prog-txt">13/13 (100%)</span>
+        </div>
+      <ul class='tlist'><li class="t-done">✅ backend/config.py — DPAPI API 키 암호화 저장/로드 (win32crypt, fallback 포함)</li><li class="t-done">✅ backend/license.py — 하드웨어 지문(CPU+MAC) SHA256, HMAC 라이선스 검증, CLI 발급 도구</li><li class="t-done">✅ backend/main.py — FastAPI 앱 (SSE 스트리밍, 파일 업로드, 챗봇, 다운로드)</li><li class="t-done">✅ frontend/package.json, vite.config.ts, tsconfig*.json</li><li class="t-done">✅ frontend/index.html, frontend/src/main.tsx</li><li class="t-done">✅ frontend/src/App.tsx — 메인 UI (상태 머신: idle→uploading→ready→generating→done)</li><li class="t-done">✅ frontend/src/App.css — 전체 스타일 (Noto Sans KR, 한국어 비즈니스 UI)</li><li class="t-done">✅ frontend/src/api/client.ts — API 클라이언트 (fetch, SSE, EventSource)</li><li class="t-done">✅ frontend/src/components/ApiKeySetup.tsx — 최초 실행 시 API 키 입력 화면</li><li class="t-done">✅ frontend/src/components/FileUpload.tsx — PDF/Excel 드래그앤드롭</li><li class="t-done">✅ frontend/src/components/GenerationOptions.tsx — 4종 체크박스 + 의존성 자동보정 + 예상비용</li><li class="t-done">✅ frontend/src/components/ProgressBar.tsx — 6단계 진행상황 (FMEA→CP→WS→자주검사→정합성→Excel)</li><li class="t-done">✅ frontend/src/components/ChatInterface.tsx — Claude 스트리밍 챗봇 + 빠른 입력</li><li class="sec-label">📌 TODO 주의사항</li><li class="t-todo">[TODO-DPAPI-UI] 복호화 실패 시(PC 재이미징 등) "API 키를 다시 입력해주세요" 안내 화면 필수</li><li class="t-todo">[TODO-LICENSE-PORTAL] 고객사 10개 초과 시 자동 재발급 포털 구축 검토</li></ul>
+    </div>
+</div>
+
+</div><!-- .wrap -->
+<script>
+function filter(btn, status) {
+  document.querySelectorAll('.fb').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.card').forEach(c => {
+    c.style.display = (status === 'all' || c.dataset.status === status) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

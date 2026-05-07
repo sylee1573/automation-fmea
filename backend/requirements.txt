@@ -1,0 +1,21 @@
+# ── Core ───────────────��────────────────────────────────
+anthropic>=0.40.0
+fastapi>=0.115.0
+uvicorn[standard]
+python-multipart
+
+# ── Document parsing ────────────────────────────────────
+openpyxl>=3.1.0
+pandas>=2.0.0
+pymupdf>=1.24.0
+
+# ── Vector DB (Phase 3) ─────────────���───────────────────
+# TODO: sqlite-vec 교체 예정 (Phase 3 refactor)
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+
+# ── Windows API (DPAPI 암호화) ───────────────────────────
+pywin32>=306     # win32crypt — Windows 전용, 없으면 평문 fallback
+
+# ── Phase 5-B (데스크톱 래핑, 선택적) ──────────���──────────
+# pywebview>=5.0.0

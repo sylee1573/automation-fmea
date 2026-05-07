@@ -1,0 +1,33 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/tsconfig.app.tsbuildinfo
+frontend/tsconfig.node.tsbuildinfo
+
+# Logs
+uvicorn_out.txt
+uvicorn_err.txt
+vite_out.txt
+vite_err.txt
+
+# Output files
+backend/output/
+poc/output/
+
+# Env / secrets
+.env
+.env.local
+*.env
+
+# OS
+.DS_Store
+Thumbs.db

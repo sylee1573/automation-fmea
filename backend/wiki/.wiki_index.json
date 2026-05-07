@@ -1,0 +1,26 @@
+{
+  "AIAG_VDA_FMEA_작성기준 [수동생성]": {
+    "hash": "manual",
+    "wiki_file": "AIAG_VDA_FMEA_작성기준_wiki.md",
+    "source": "AIAG & VDA FMEA 1st Ed. (2019) 공개 정보 기반 수동 작성",
+    "updated": "2026-04-25"
+  },
+  "공정별_고장유형_라이브러리 [수동생성]": {
+    "hash": "manual",
+    "wiki_file": "공정별_고장유형_라이브러리_wiki.md",
+    "source": "자동차 부품 제조 현장 경험 및 공개 자료 기반 수동 작성",
+    "updated": "2026-04-25"
+  },
+  "고객사_CSR_요구사항 [수동생성]": {
+    "hash": "manual",
+    "wiki_file": "고객사_CSR_요구사항_wiki.md",
+    "source": "PPAP/APQP 공개 가이드 및 협력사 교육 자료 기반 수동 작성",
+    "updated": "2026-04-25"
+  },
+  "IATF16949_FMEA_관련조항 [수동생성]": {
+    "hash": "manual",
+    "wiki_file": "IATF16949_FMEA_관련조항_wiki.md",
+    "source": "IATF 16949:2016 공개 조항 구조 기반 수동 작성",
+    "updated": "2026-04-25"
+  }
+}
