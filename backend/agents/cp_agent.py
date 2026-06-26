@@ -1,7 +1,7 @@
 """
 CP Agent — Control Plan(관리계획서) 생성
 모델: claude-haiku-4-5-20251001
-입력: FMEA 압축 요약 → CC/SC·AP=H 항목 자동 반영
+입력: FMEA 압축 요약 → CC/SC·고RPN(≥100) 항목 자동 반영
 """
 
 import json
@@ -22,7 +22,7 @@ PROMPT_TEMPLATE = """## 부품 정보
 ## 공정 정보
 {process_text}
 
-## PFMEA 핵심 요약 (CC/SC·AP=H 항목 필수 반영)
+## PFMEA 핵심 요약 (CC/SC·고RPN 항목 필수 반영)
 {fmea_summary}
 
 ---
@@ -32,7 +32,7 @@ PROMPT_TEMPLATE = """## 부품 정보
 규칙:
 - 각 공정의 제품특성·공정특성을 모두 포함
 - CC/SC 특별특성은 special_characteristic 필드에 반드시 기입
-- PFMEA의 AP=H 항목은 전수검사(100%) 또는 자동화 검출 방법으로 관리
+- PFMEA의 고RPN(RPN≥100) 또는 S≥9 항목은 전수검사(100%) 또는 자동화 검출 방법으로 관리
 - sample_size: "5개/회" 형식, frequency: "매 2시간", "초물/종물" 형식
 - measurement_method: 구체적인 측정 기기명 포함 (예: "버니어 캘리퍼스 ±0.05mm")
 

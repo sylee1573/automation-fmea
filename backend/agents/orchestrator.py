@@ -88,6 +88,16 @@ def _extract_cc_sc_rows(data: dict) -> list:
     return [r for r in rows if str(r.get("special_characteristic", "")).upper() in ("CC", "SC")]
 
 
+def _is_high_rpn(row: dict) -> bool:
+    """RPN≥100 또는 S≥9(안전·법규) → 중점 관리 항목"""
+    try:
+        if int(row.get("S", 0)) >= 9:
+            return True
+        return int(row.get("RPN", 0)) >= 100
+    except (TypeError, ValueError):
+        return False
+
+
 async def _compress(
     result: dict,
     target_agent: str,
@@ -195,8 +205,8 @@ async def run_sequential(
             client=client,
         )
         rows = len(result["fmea"].get("rows", []))
-        h = sum(1 for r in result["fmea"]["rows"] if str(r.get("AP", "")).upper() == "H")
-        await _notify("FMEA", "completed", rows=rows, h_count=h)
+        high = sum(1 for r in result["fmea"]["rows"] if _is_high_rpn(r))
+        await _notify("FMEA", "completed", rows=rows, high_rpn_count=high)
 
     # ── Step 2: CP ─────────────────────────────────────────────────────────────
     if options.cp and result["fmea"]:
@@ -324,6 +334,7 @@ async def run_sequential(
             work_standard=result["work_standard"],
             inspection=result["inspection"],
             output_dir=str(out_dir),
+            customer=process_data.get("customer", ""),
         )
         result["output_files"] = [str(f) for f in output_files]
         await _notify("Excel", "completed", files=[Path(f).name for f in output_files])

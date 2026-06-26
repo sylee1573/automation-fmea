@@ -1,5 +1,5 @@
 """
-FMEA Agent — PFMEA 생성 (AIAG-VDA 1st Ed. 기준)
+FMEA Agent — PFMEA 생성 (AIAG FMEA 4th Ed. / RPN 방식)
 모델: claude-sonnet-4-6
 """
 
@@ -10,8 +10,8 @@ MODEL = "claude-sonnet-4-6"
 
 # ─── 시스템 프롬프트 (poc/fmea_poc.py 동일) ────────────────────────────────────
 SYSTEM_PROMPT = """너는 자동차 부품 제조 공정의 PFMEA(공정 고장유형 및 영향분석) 전문가다.
-AIAG & VDA FMEA 1st Edition(2019) 기준을 따른다.
-RPN 방식이 아닌 AP(Action Priority: H/M/L) 방식을 사용한다.
+AIAG FMEA 4th Edition 기준을 따른다.
+위험도는 RPN(Risk Priority Number = S×O×D) 방식을 사용한다.
 출력은 반드시 유효한 JSON만 출력한다. 설명 텍스트나 마크다운 코드블록 외부에 아무것도 추가하지 않는다."""
 
 BUILTIN_FEWSHOT = """
@@ -22,7 +22,7 @@ BUILTIN_FEWSHOT = """
 - effect_manufacturing: "금형 손상 / 후공정 자재 손실"
 - failure_mode: "소재 방향 오투입" / cause: "투입 방향 표시 미흡"
 - O: 3 / prevention_controls: "소재 투입 방향 보조 지그 설치"
-- detection_controls: "초물 치수 검사 (버니어 캘리퍼스)" / D: 3 / AP: "M"
+- detection_controls: "초물 치수 검사 (버니어 캘리퍼스)" / D: 3 / RPN: 63
 - recommended_action: "소재 방향 감지 센서 추가 검토"
 
 예시 2 (CC 특별특성)
@@ -32,8 +32,8 @@ BUILTIN_FEWSHOT = """
 - effect_manufacturing: "조립 라인 정지 / 납기 지연"
 - failure_mode: "볼트홀 직경 과소 또는 과대" / cause: "펀치 마모 / 다이 클리어런스 부적정"
 - O: 2 / prevention_controls: "펀치 교체 기준 수립 (마모 한계 치수)"
-- detection_controls: "핀 게이지 전수검사 (통과/불통과)" / D: 2 / AP: "H"
-- recommended_action: "자동 핀 게이지 설비 도입 검토"
+- detection_controls: "핀 게이지 전수검사 (통과/불통과)" / D: 2 / RPN: 36
+- recommended_action: "자동 핀 게이지 설비 도입 검토 (S≥9 안전 항목 → 필수)"
 
 예시 3
 - process_number: "60" / process_step: "최종 검사" / process_work_element: "치수 전수 검사"
@@ -42,7 +42,7 @@ BUILTIN_FEWSHOT = """
 - effect_manufacturing: "불량 재작업 비용 증가"
 - failure_mode: "불량품 유출" / cause: "검사 절차서 미준수"
 - O: 2 / prevention_controls: "측정 결과 전산 입력 의무화"
-- detection_controls: "측정 데이터 실시간 SPC 모니터링" / D: 5 / AP: "M"
+- detection_controls: "측정 데이터 실시간 SPC 모니터링" / D: 5 / RPN: 80
 - recommended_action: "측정 장비 RS-232 자동 수집 연동"
 """
 
@@ -60,11 +60,14 @@ PROMPT_TEMPLATE = """## 분석 대상
 - 특별특성은 special_characteristic 필드에 "CC" 또는 "SC" 기입 (없으면 빈 문자열)
 - 고장 영향을 effect_end_user(최종 사용자)와 effect_manufacturing(제조 영향) 두 가지로 구분
 - process_number는 10, 20, 30... (같은 공정의 여러 항목은 동일 번호)
-- AP 판정:
-  - H: S≥9이고 O≥3, 또는 S≥7이고 O≥4
-  - M: S≥7이고 O≥2, 또는 S≥5이고 O≥6
-  - L: 그 외
-- responsibility, target_date, status, action_taken, revised_S/O/D/AP는 빈 문자열
+- RPN 산출: RPN = S × O × D (반드시 세 값의 곱과 일치하는 정수)
+- 권고 조치(recommended_action):
+  - RPN ≥ 100 이거나 S ≥ 9(안전·법규 관련)인 항목은 권고 조치를 반드시 기입
+  - 그 외 항목은 필요 시에만 기입하고 없으면 빈 문자열
+- 문서 메타데이터(fmea_no, vehicle_model, supplier, doc_no, revision)는 입력에서
+  파악되면 채우고, 모르면 빈 문자열
+- responsibility, target_date, status, action_taken, revised_S/O/D/RPN,
+  prepared_by, checked_by, approved_by는 빈 문자열
 
 출력 형식:
 ```json
@@ -72,6 +75,14 @@ PROMPT_TEMPLATE = """## 분석 대상
   "part_name": "",
   "part_number": "",
   "customer": "",
+  "fmea_no": "",
+  "vehicle_model": "",
+  "supplier": "",
+  "doc_no": "",
+  "revision": "",
+  "prepared_by": "",
+  "checked_by": "",
+  "approved_by": "",
   "rows": [
     {{
       "process_number": "10",
@@ -88,7 +99,7 @@ PROMPT_TEMPLATE = """## 분석 대상
       "prevention_controls": "예방 관리 방법(PC)",
       "detection_controls": "검출 관리 방법(DC)",
       "D": 0,
-      "AP": "H/M/L",
+      "RPN": 0,
       "recommended_action": "권고 조치",
       "responsibility": "",
       "target_date": "",
@@ -97,7 +108,7 @@ PROMPT_TEMPLATE = """## 분석 대상
       "revised_S": "",
       "revised_O": "",
       "revised_D": "",
-      "revised_AP": ""
+      "revised_RPN": ""
     }}
   ]
 }}
@@ -128,6 +139,22 @@ def _parse_json(raw: str) -> dict:
     return json.loads(text)
 
 
+def _enforce_rpn(data: dict) -> dict:
+    """RPN = S×O×D 강제 재계산. revised_S/O/D가 모두 채워졌으면 revised_RPN도 산출."""
+    for row in data.get("rows", []):
+        try:
+            row["RPN"] = int(row.get("S", 0)) * int(row.get("O", 0)) * int(row.get("D", 0))
+        except (TypeError, ValueError):
+            row["RPN"] = 0
+        rs, ro, rd = row.get("revised_S"), row.get("revised_O"), row.get("revised_D")
+        if all(str(v).strip() not in ("", "None") for v in (rs, ro, rd)):
+            try:
+                row["revised_RPN"] = int(rs) * int(ro) * int(rd)
+            except (TypeError, ValueError):
+                row["revised_RPN"] = ""
+    return data
+
+
 async def generate(
     process_data: dict,
     wiki_rules: str,
@@ -144,7 +171,7 @@ async def generate(
         client: AsyncAnthropic 인스턴스
 
     Returns:
-        AIAG-VDA 23컬럼 PFMEA dict
+        RPN 방식 PFMEA dict (문서 메타데이터 + rows)
     """
     scenario = _build_scenario(process_data)
     similar_section = f"\n{similar_cases}\n" if similar_cases else ""
@@ -187,7 +214,7 @@ async def generate(
     )
 
     _log_cache_usage(msg.usage, "FMEA")
-    return _parse_json(msg.content[0].text)
+    return _enforce_rpn(_parse_json(msg.content[0].text))
 
 
 def _log_cache_usage(usage, agent_name: str):
