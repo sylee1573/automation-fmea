@@ -28,7 +28,7 @@ from .license import (
 )
 from .agents import GenerationOptions, load_wiki_rules, run_sequential
 from .preprocessing.pdf_parser import parse as parse_pdf
-from .preprocessing.excel_parser import parse_process_sheet
+from .preprocessing.excel_parser import parse_pfd, parse_process_sheet
 
 OUTPUT_DIR = Path(__file__).parent.parent / "output"
 FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
@@ -106,6 +106,7 @@ def activate_license(license_key: str = Form(...)):
 async def upload_files(
     drawing: Optional[UploadFile] = File(None),
     process_sheet: Optional[UploadFile] = File(None),
+    pfd: Optional[UploadFile] = File(None),
 ):
     session_id = str(uuid.uuid4())
     session = {
@@ -122,6 +123,7 @@ async def upload_files(
 
     drawing_summary = ""
     process_summary = ""
+    pfd_summary = ""
 
     if drawing:
         content = await drawing.read()
@@ -137,11 +139,27 @@ async def upload_files(
         except Exception as e:
             drawing_summary = f"도면 파싱 오류: {e}"
 
+    if pfd:
+        content = await pfd.read()
+        try:
+            pfd_text = parse_pfd(content)
+            # PFD는 process_text에 추가 (공정검토서보다 우선)
+            session["process_text"] = pfd_text
+            # 공정 수 추출해서 요약에 표시
+            step_line = next((l for l in pfd_text.splitlines() if "공정 감지" in l), "")
+            pfd_summary = f"공정흐름도(PFD): {pfd.filename}" + (f" — {step_line}" if step_line else "")
+        except Exception as e:
+            pfd_summary = f"PFD 파싱 오류: {e}"
+
     if process_sheet:
         content = await process_sheet.read()
         try:
             text = parse_process_sheet(content)
-            session["process_text"] = text
+            # PFD가 이미 있으면 공정검토서를 뒤에 추가, 없으면 단독 사용
+            if session["process_text"]:
+                session["process_text"] += "\n\n[공정검토서]\n" + text
+            else:
+                session["process_text"] = text
             process_summary = f"공정검토서: {process_sheet.filename}"
         except Exception as e:
             process_summary = f"공정검토서 파싱 오류: {e}"
@@ -151,6 +169,8 @@ async def upload_files(
     summary_parts = []
     if drawing_summary:
         summary_parts.append(drawing_summary)
+    if pfd_summary:
+        summary_parts.append(pfd_summary)
     if process_summary:
         summary_parts.append(process_summary)
     if not summary_parts:

@@ -49,14 +49,14 @@ export default function App() {
   }
 
   // ── 파일 업로드 ──────────────────────────────────────────────
-  const handleFiles = async (drawing?: File, processSheet?: File) => {
-    if (!drawing && !processSheet) return
+  const handleFiles = async (drawing?: File, processSheet?: File, pfd?: File) => {
+    if (!drawing && !processSheet && !pfd) return
     setAppState('uploading')
     setSummary('')
     setSessionId('')
 
     try {
-      const result = await api.uploadFiles(drawing, processSheet)
+      const result = await api.uploadFiles(drawing, processSheet, pfd)
       setSessionId(result.session_id)
       setSummary(result.summary)
       setPartName(result.part_name || '')

@@ -43,9 +43,10 @@ export const api = {
     fetch(`${BASE}/setup/apikey`, { method: 'DELETE' }).then(r => r.json()),
 
   // ── 업로드 ─────────────────────────────────────────────────
-  uploadFiles: (drawing?: File, processSheet?: File): Promise<UploadResponse> => {
+  uploadFiles: (drawing?: File, processSheet?: File, pfd?: File): Promise<UploadResponse> => {
     const form = new FormData()
     if (drawing) form.append('drawing', drawing)
+    if (pfd) form.append('pfd', pfd)
     if (processSheet) form.append('process_sheet', processSheet)
     return fetch(`${BASE}/upload`, { method: 'POST', body: form }).then(r => r.json())
   },

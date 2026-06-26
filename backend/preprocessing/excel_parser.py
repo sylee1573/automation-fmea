@@ -222,6 +222,175 @@ def parse_fmea_excel(file_path: str) -> dict:
     }
 
 
+# ─── PFD(공정흐름도) 컬럼 매핑 ───────────────────────────────────────────────
+
+PFD_COLUMN_MAP: dict[str, list[str]] = {
+    "process_no": [
+        "공정번호", "공정 번호", "no", "no.", "번호", "process no", "op no",
+        "공정 no", "공정no",
+    ],
+    "process_name": [
+        "공정명", "공정 명", "공정이름", "process name", "operation", "공정",
+        "작업명", "공정 내용",
+    ],
+    "process_type": [
+        "공정유형", "공정 유형", "유형", "type", "공정종류", "종류",
+    ],
+    "machine": [
+        "기계", "설비", "기계/설비", "장비", "machine", "equipment",
+        "기계설비", "사용설비", "치구", "금형",
+    ],
+    "function": [
+        "기능", "공정기능", "공정 기능", "목적", "function", "purpose",
+        "기능/목적",
+    ],
+    "input": [
+        "투입", "입력", "투입물", "투입소재", "input", "소재", "투입 부품",
+        "투입재료",
+    ],
+    "output": [
+        "산출", "출력", "산출물", "output", "제품", "완성품",
+    ],
+    "special_char": [
+        "특별특성", "특별 특성", "cc", "sc", "cc/sc", "특성기호",
+        "특별특성기호", "special characteristic",
+    ],
+    "remark": [
+        "비고", "특기사항", "remark", "note", "notes", "참고",
+    ],
+}
+
+
+def _detect_pfd_header(value_map: dict, max_scan: int = 15) -> int:
+    """PFD 헤더 행 자동 감지"""
+    all_keywords = {kw.lower() for kws in PFD_COLUMN_MAP.values() for kw in kws}
+    max_col = max((c for _, c in value_map), default=1)
+    best_row, best_score = 1, 0
+    for r in range(1, max_scan + 1):
+        score = sum(
+            1 for c in range(1, max_col + 1)
+            if any(kw in _normalize_text(value_map.get((r, c), "")).lower()
+                   for kw in all_keywords)
+        )
+        if score > best_score:
+            best_score, best_row = score, r
+    return best_row
+
+
+def _map_pfd_columns(value_map: dict, header_row: int) -> dict[str, int]:
+    """PFD 헤더에서 필드명 → 컬럼 인덱스 매핑"""
+    max_col = max((c for _, c in value_map), default=1)
+    col_to_field: dict[str, int] = {}
+    for c in range(1, max_col + 1):
+        header_val = _normalize_text(value_map.get((header_row, c), "")).lower()
+        if not header_val:
+            continue
+        for field, keywords in PFD_COLUMN_MAP.items():
+            if field in col_to_field:
+                continue
+            if any(kw.lower() in header_val or header_val in kw.lower()
+                   for kw in keywords):
+                col_to_field[field] = c
+    return col_to_field
+
+
+def parse_pfd_excel(file_path: str) -> dict:
+    """
+    PFD(공정흐름도) Excel 파싱.
+    Returns: steps 리스트 (공정번호/공정명/설비/기능/특별특성 등)
+    """
+    path = Path(file_path)
+    if not path.exists():
+        return {"error": f"파일 없음: {file_path}"}
+    try:
+        wb = openpyxl.load_workbook(path, data_only=True)
+    except Exception as e:
+        return {"error": f"파일 열기 실패: {e}"}
+
+    ws = wb.active
+    value_map = build_value_map(ws)
+    max_row = ws.max_row or 1
+
+    header_row = _detect_pfd_header(value_map)
+    col_map = _map_pfd_columns(value_map, header_row)
+
+    steps = []
+    for r in range(header_row + 1, max_row + 1):
+        row_vals = [value_map.get((r, c)) for c in range(1, max(col_map.values(), default=1) + 1)]
+        if not any(v is not None and str(v).strip() for v in row_vals):
+            continue
+        step: dict[str, str] = {}
+        for field, c in col_map.items():
+            step[field] = _normalize_text(value_map.get((r, c)) or "")
+        # 공정명이 없으면 건너뜀
+        if not step.get("process_name") and not step.get("process_no"):
+            continue
+        steps.append(step)
+
+    wb.close()
+
+    detected = list(col_map.keys())
+    warnings = []
+    for required in ("process_name", "machine", "function"):
+        if required not in col_map:
+            warnings.append(f"PFD 컬럼 미감지: {required}")
+
+    return {
+        "file_path": str(path.resolve()),
+        "sheet_name": ws.title,
+        "header_row": header_row,
+        "detected_columns": detected,
+        "step_count": len(steps),
+        "steps": steps,
+        "warnings": warnings,
+    }
+
+
+def parse_pfd(content: bytes) -> str:
+    """
+    bytes로 받은 PFD Excel을 PFMEA 에이전트 주입용 텍스트로 변환.
+    공정번호·공정명·설비·기능·특별특성을 구조화된 텍스트로 반환.
+    """
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = tmp.name
+    try:
+        result = parse_pfd_excel(tmp_path)
+        if "error" in result:
+            return f"(PFD 파싱 오류: {result['error']})"
+
+        lines = ["[공정흐름도 (PFD)]"]
+        lines.append(f"총 {result['step_count']}개 공정 감지")
+        lines.append("")
+
+        for i, step in enumerate(result["steps"], 1):
+            no = step.get("process_no", str(i))
+            name = step.get("process_name", "(미기재)")
+            parts = [f"[{no}] {name}"]
+            if step.get("machine"):
+                parts.append(f"  설비: {step['machine']}")
+            if step.get("function"):
+                parts.append(f"  기능: {step['function']}")
+            if step.get("input"):
+                parts.append(f"  투입: {step['input']}")
+            if step.get("output"):
+                parts.append(f"  산출: {step['output']}")
+            if step.get("special_char"):
+                parts.append(f"  특별특성: {step['special_char']}")
+            if step.get("remark"):
+                parts.append(f"  비고: {step['remark']}")
+            lines.extend(parts)
+            lines.append("")
+
+        if result["warnings"]:
+            lines.append("※ 주의: " + " / ".join(result["warnings"]))
+
+        return "\n".join(lines)
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+
+
 def parse_process_sheet(content: bytes) -> str:
     """
     bytes로 받은 공정검토서 Excel을 텍스트로 변환 (main.py FastAPI 업로드 어댑터).

@@ -48,21 +48,27 @@ function DropZone({ label, accept, hint, icon, onFile, file }: Props) {
 }
 
 interface FileUploadProps {
-  onFilesChange: (drawing?: File, processSheet?: File) => void
+  onFilesChange: (drawing?: File, processSheet?: File, pfd?: File) => void
 }
 
 export default function FileUpload({ onFilesChange }: FileUploadProps) {
   const [drawing, setDrawing] = useState<File>()
   const [processSheet, setProcessSheet] = useState<File>()
+  const [pfd, setPfd] = useState<File>()
 
   const handleDrawing = (f: File) => {
     setDrawing(f)
-    onFilesChange(f, processSheet)
+    onFilesChange(f, processSheet, pfd)
   }
 
   const handleProcessSheet = (f: File) => {
     setProcessSheet(f)
-    onFilesChange(drawing, f)
+    onFilesChange(drawing, f, pfd)
+  }
+
+  const handlePfd = (f: File) => {
+    setPfd(f)
+    onFilesChange(drawing, processSheet, f)
   }
 
   return (
@@ -74,6 +80,14 @@ export default function FileUpload({ onFilesChange }: FileUploadProps) {
         icon="📄"
         onFile={handleDrawing}
         file={drawing}
+      />
+      <DropZone
+        label="공정흐름도(PFD) 업로드 (선택)"
+        accept=".xlsx,.xls"
+        hint="PFMEA 공정 단계 자동 인식 (Excel)"
+        icon="🔄"
+        onFile={handlePfd}
+        file={pfd}
       />
       <DropZone
         label="공정검토서 업로드 (선택)"
