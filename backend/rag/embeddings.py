@@ -20,10 +20,15 @@ _model: Optional[object] = None
 def get_model():
     global _model
     if _model is None:
+        import os
         from sentence_transformers import SentenceTransformer
-        print(f"  임베딩 모델 로드: {MODEL_NAME}", flush=True)
+        # 번들 배포 시 STANDARDS_MODEL_DIR 로 로컬 모델 경로를 지정하면 오프라인 로드.
+        # 미설정이면 기존대로 이름으로 로드(온라인/캐시 폴백).
+        local_dir = os.environ.get("STANDARDS_MODEL_DIR")
+        source = local_dir if (local_dir and os.path.isdir(local_dir)) else MODEL_NAME
+        print(f"  임베딩 모델 로드: {source}", flush=True)
         print("  (최초 실행 시 ~90MB 다운로드, 이후 캐시 사용)", flush=True)
-        _model = SentenceTransformer(MODEL_NAME)
+        _model = SentenceTransformer(source)
     return _model
 
 
