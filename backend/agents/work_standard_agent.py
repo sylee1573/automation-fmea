@@ -25,11 +25,15 @@ PROMPT_TEMPLATE = """## 부품 정보
 ## 관리계획서(CP) 핵심 요약
 {cp_summary}
 
+{spine_text}
+
 ---
 
 위 정보를 바탕으로 작업표준서를 작성해라.
 
 규칙:
+- 위 [공유 엔티티 목록]의 공정을 모두 다룬다. 목록에 없는 공정을 임의로 만들지 마라.
+- process_number는 목록의 공정번호를 그대로 사용한다.
 - 각 공정의 작업 단계를 세부적으로 분해 (공정당 3~6단계)
 - key_point: 작업자가 반드시 확인해야 할 핵심 사항 (CC/SC 관련 주의사항 강조)
 - reason: 핵심사항의 이유/근거 (품질 불량 예방 관점)
@@ -72,18 +76,20 @@ async def generate(
     cp_summary: str,
     wiki_rules: str,
     client: anthropic.AsyncAnthropic,
+    spine_text: str = "",
 ) -> dict:
     """
-    작업표준서 JSON 생성.
+    작업표준서 JSON 생성. 공정 커버리지를 위해 process_id를 코드가 스탬프한다.
 
     Args:
         process_data: {drawing_text, process_text, part_name, part_number, customer, process_type}
         cp_summary: CP 압축 요약
         wiki_rules: LLM Wiki 내용 (프롬프트 캐싱 적용)
         client: AsyncAnthropic 인스턴스
+        spine_text: spine 공정 목록 프롬프트 문자열
 
     Returns:
-        작업표준서 dict
+        작업표준서 dict (행에 process_id 스탬프)
     """
     user_prompt = PROMPT_TEMPLATE.format(
         part_name=process_data.get("part_name", ""),
@@ -91,6 +97,7 @@ async def generate(
         customer=process_data.get("customer", ""),
         process_text=process_data.get("process_text", ""),
         cp_summary=cp_summary,
+        spine_text=spine_text,
     )
 
     content_blocks = []
@@ -107,9 +114,9 @@ async def generate(
         "text": user_prompt,
     })
 
-    msg = await client.messages.create(
+    async with client.messages.stream(
         model=MODEL,
-        max_tokens=4096,
+        max_tokens=64000,
         system=[{
             "type": "text",
             "text": SYSTEM_PROMPT,
@@ -117,10 +124,18 @@ async def generate(
         }],
         messages=[{"role": "user", "content": content_blocks}],
         extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
-    )
+    ) as stream:
+        msg = await stream.get_final_message()
 
     _log_cache_usage(msg.usage, "작업표준서")
-    return _parse_json(msg.content[0].text)
+    parsed = _parse_json(msg.content[0].text)
+
+    # 공정 커버리지: process_number 정확일치로 process_id 스탬프 (정체성은 코드 소유)
+    for row in parsed.get("rows", []) or []:
+        pnum = str(row.get("process_number", "")).strip()
+        row["process_id"] = f"P{pnum}" if pnum else ""
+
+    return parsed
 
 
 def _log_cache_usage(usage, agent_name: str):

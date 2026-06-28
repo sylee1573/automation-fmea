@@ -34,6 +34,7 @@ from typing import Optional
 import anthropic
 
 from . import fmea_agent, cp_agent, work_standard_agent, inspection_agent
+from .spine import build_spine, stamp_ids, format_spine_for_prompt
 from ..validators.consistency_checker import check as check_consistency
 from ..output.excel_generator import generate_all
 
@@ -83,11 +84,6 @@ def load_wiki_rules(wiki_dir: str = None) -> str:
 
 # ─── 압축기 (CC/SC 강제 보존) ─────────────────────────────────────────────────
 
-def _extract_cc_sc_rows(data: dict) -> list:
-    rows = data.get("rows", [])
-    return [r for r in rows if str(r.get("special_characteristic", "")).upper() in ("CC", "SC")]
-
-
 def _is_high_rpn(row: dict) -> bool:
     """RPN≥100 또는 S≥9(안전·법규) → 중점 관리 항목"""
     try:
@@ -104,32 +100,22 @@ async def _compress(
     client: anthropic.AsyncAnthropic,
 ) -> str:
     """
-    결과 dict를 다음 에이전트 입력용 텍스트로 압축.
-    CC/SC 항목은 JSON 원본 그대로 강제 포함.
+    결과 dict를 다음 에이전트 입력용 서술 요약으로 압축.
+    특별특성 정체성(CC/SC)은 spine이 책임지므로 여기서는 강제하지 않는다.
     """
-    cc_sc_rows = _extract_cc_sc_rows(result)
-
-    mandatory_section = ""
-    if cc_sc_rows:
-        mandatory_section = (
-            f"\n## [필수 포함] CC/SC 특별특성 항목 ({len(cc_sc_rows)}건) — 절대 누락 금지\n"
-            f"```json\n{json.dumps(cc_sc_rows, ensure_ascii=False, indent=2)}\n```\n"
-        )
-
     prompt = f"""다음 문서 결과를 {target_agent} 에이전트에게 전달할 핵심 요약으로 압축해라.
 
 압축 규칙:
-1. 아래 [필수 포함] 섹션은 반드시 그대로 출력할 것
-2. 나머지는 {target_agent} 생성에 필요한 최소 정보만 마크다운으로 요약
-3. 각 공정의 번호·이름·주요 관리항목을 간결하게 유지
-{mandatory_section}
+1. {target_agent} 생성에 필요한 최소 정보만 마크다운으로 요약
+2. 각 공정의 번호·이름·주요 관리항목을 간결하게 유지
+
 ## 원본 (압축 대상)
 {json.dumps(result, ensure_ascii=False)}
 """
 
     msg = await client.messages.create(
         model=COMPRESSOR_MODEL,
-        max_tokens=2048,
+        max_tokens=8192,
         messages=[{"role": "user", "content": prompt}],
     )
     return msg.content[0].text.strip()
@@ -187,6 +173,9 @@ async def run_sequential(
         "output_files": [],
     }
 
+    spine = None
+    spine_text = ""
+
     async def _notify(step: str, status: str, **kwargs):
         msg = f"[{step}] {status}"
         if kwargs:
@@ -208,6 +197,11 @@ async def run_sequential(
         high = sum(1 for r in result["fmea"]["rows"] if _is_high_rpn(r))
         await _notify("FMEA", "completed", rows=rows, high_rpn_count=high)
 
+        # spine 구축: FMEA를 source-of-truth로 공정·특별특성 ID 부여
+        spine = build_spine(result["fmea"])
+        result["fmea"] = stamp_ids(result["fmea"], spine)
+        spine_text = format_spine_for_prompt(spine)
+
     # ── Step 2: CP ─────────────────────────────────────────────────────────────
     if options.cp and result["fmea"]:
         await _notify("CP", "started")
@@ -217,6 +211,8 @@ async def run_sequential(
             fmea_summary=fmea_summary,
             wiki_rules=wiki_rules,
             client=client,
+            spine=spine,
+            spine_text=spine_text,
         )
         cp_rows = len(result["cp"].get("rows", []))
         await _notify("CP", "completed", rows=cp_rows)
@@ -240,6 +236,7 @@ async def run_sequential(
                 cp_summary=cp_summary_ws,
                 wiki_rules=wiki_rules,
                 client=client,
+                spine_text=spine_text,
             )
             if options.work_standard else None
         )
@@ -250,6 +247,8 @@ async def run_sequential(
                 cp_summary=cp_summary_insp,
                 wiki_rules=wiki_rules,
                 client=client,
+                spine=spine,
+                spine_text=spine_text,
             )
             if options.inspection else None
         )
@@ -281,6 +280,7 @@ async def run_sequential(
             cp=result["cp"],
             work_standard=result["work_standard"],
             inspection=result["inspection"],
+            spine=spine,
         )
         if not issues:
             break
@@ -292,17 +292,17 @@ async def run_sequential(
 
         if any("[FMEA_CP]" in i for i in issues) and result["fmea"]:
             fmea_summary = await _compress(result["fmea"], "Control Plan", client)
-            retry_tasks.append(cp_agent.generate(process_data, fmea_summary, wiki_rules, client))
+            retry_tasks.append(cp_agent.generate(process_data, fmea_summary, wiki_rules, client, spine, spine_text))
             retry_labels.append("cp")
 
         if any("[CP_WS]" in i for i in issues) and result["cp"]:
             cp_sum = await _compress(result["cp"], "작업표준서", client)
-            retry_tasks.append(work_standard_agent.generate(process_data, cp_sum, wiki_rules, client))
+            retry_tasks.append(work_standard_agent.generate(process_data, cp_sum, wiki_rules, client, spine_text))
             retry_labels.append("work_standard")
 
         if any("[CP_INSP]" in i for i in issues) and result["cp"]:
             cp_sum = await _compress(result["cp"], "자주검사", client)
-            retry_tasks.append(inspection_agent.generate(process_data, cp_sum, wiki_rules, client))
+            retry_tasks.append(inspection_agent.generate(process_data, cp_sum, wiki_rules, client, spine, spine_text))
             retry_labels.append("inspection")
 
         if retry_tasks:
@@ -315,6 +315,7 @@ async def run_sequential(
         cp=result["cp"],
         work_standard=result["work_standard"],
         inspection=result["inspection"],
+        spine=spine,
     )
 
     if result["issues"]:

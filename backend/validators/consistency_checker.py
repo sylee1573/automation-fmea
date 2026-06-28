@@ -1,5 +1,7 @@
 """
-정합성 검증기 — FMEA ↔ CP ↔ 작업표준서 ↔ 자주검사 항목 일치 확인
+정합성 검증기 — spine(공유 엔티티 ID) 기준 FMEA ↔ CP ↔ 작업표준서 ↔ 자주검사 동일성 확인
+
+타입 집합 비교가 아니라 **ID 동일성**으로 검증한다 → 누락·치환 동시 검출.
 
 반환 형식: list[str]
   - "[FMEA_CP] ..." → CP 에이전트 재실행 필요
@@ -10,26 +12,29 @@
 from __future__ import annotations
 
 
-def _get_process_numbers(data: dict | None) -> set[str]:
+def _process_ids(data: dict | None) -> set[str]:
+    """행의 process_id 집합. 구 스키마(미스탬프) graceful: process_number로 유도."""
     if not data:
         return set()
-    return {str(r.get("process_number", "")).strip() for r in data.get("rows", [])} - {""}
-
-
-def _get_cc_sc_by_process(data: dict | None, process_key: str = "process_number") -> dict[str, list[str]]:
-    """공정번호 → CC/SC 항목명 리스트 매핑"""
-    if not data:
-        return {}
-    result: dict[str, list[str]] = {}
+    ids: set[str] = set()
     for row in data.get("rows", []):
-        sc = str(row.get("special_characteristic", "")).upper()
-        if sc not in ("CC", "SC"):
-            continue
-        pnum = str(row.get(process_key, "")).strip()
-        name_key = "failure_mode" if "failure_mode" in row else "characteristic_name"
-        name = str(row.get(name_key, row.get("inspection_item", ""))).strip()
-        result.setdefault(pnum, []).append(f"{sc}:{name}")
-    return result
+        pid = str(row.get("process_id", "")).strip()
+        if not pid:
+            pnum = str(row.get("process_number", "")).strip()
+            pid = f"P{pnum}" if pnum else ""
+        if pid:
+            ids.add(pid)
+    return ids
+
+
+def _char_ids(data: dict | None) -> set[str]:
+    """행의 char_id 집합(빈 값 제외)."""
+    if not data:
+        return set()
+    return {
+        str(row.get("char_id", "")).strip()
+        for row in data.get("rows", [])
+    } - {""}
 
 
 def check(
@@ -37,71 +42,53 @@ def check(
     cp: dict | None,
     work_standard: dict | None,
     inspection: dict | None,
+    spine: dict | None = None,
 ) -> list[str]:
     """
-    문서 간 정합성 검증.
+    spine 기준 문서 간 정합성 검증.
 
     검증 항목:
-      1. FMEA 공정번호 ↔ CP 공정번호 일치
-      2. FMEA CC/SC 항목 → CP 특별특성 누락 없는지
-      3. CP CC/SC 특별특성 → 자주검사 항목 누락 없는지
+      1. 공정 커버리지 — spine processes의 모든 process_id가 CP/WS/자주검사에 존재
+      2. 특별특성 동일성 — spine special_characteristics의 모든 char_id가 CP·자주검사에 존재
+
+    spine이 없으면 검증을 건너뛴다(빈 목록 반환).
 
     Returns:
         불일치 설명 문자열 목록 (비어 있으면 정합성 통과)
     """
+    if not spine:
+        return []
+
     issues: list[str] = []
 
-    # ── 검증 1: 공정번호 일치 ───────────────────────────────────────────────────
-    if fmea and cp:
-        fmea_pnums = _get_process_numbers(fmea)
-        cp_pnums = _get_process_numbers(cp)
+    spine_pids = {p["id"] for p in spine.get("processes", [])}
+    spine_cids = {c["id"] for c in spine.get("special_characteristics", [])}
 
-        in_fmea_not_cp = fmea_pnums - cp_pnums
-        in_cp_not_fmea = cp_pnums - fmea_pnums
+    # ── 검증 1: 공정 커버리지 ────────────────────────────────────────────────────
+    coverage = [
+        (cp, "[FMEA_CP]", "CP"),
+        (work_standard, "[CP_WS]", "작업표준서"),
+        (inspection, "[CP_INSP]", "자주검사"),
+    ]
+    for doc, label, name in coverage:
+        if doc is None:
+            continue
+        missing = spine_pids - _process_ids(doc)
+        if missing:
+            nums = ", ".join(sorted(missing))
+            issues.append(f"{label} {name}에 누락된 공정: {nums}")
 
-        if in_fmea_not_cp:
-            nums = ", ".join(sorted(in_fmea_not_cp))
-            issues.append(f"[FMEA_CP] FMEA에 있지만 CP에 없는 공정번호: {nums}")
-        if in_cp_not_fmea:
-            nums = ", ".join(sorted(in_cp_not_fmea))
-            issues.append(f"[FMEA_CP] CP에 있지만 FMEA에 없는 공정번호: {nums}")
-
-    # ── 검증 2: FMEA CC/SC → CP 특별특성 ──────────────────────────────────────
-    if fmea and cp:
-        fmea_cc_sc = _get_cc_sc_by_process(fmea, "process_number")
-        cp_cc_sc = _get_cc_sc_by_process(cp, "process_number")
-
-        for pnum, fmea_items in fmea_cc_sc.items():
-            cp_items = cp_cc_sc.get(pnum, [])
-            fmea_sc_types = {item.split(":")[0] for item in fmea_items}
-            cp_sc_types = {item.split(":")[0] for item in cp_items}
-
-            missing = fmea_sc_types - cp_sc_types
-            if missing:
-                issues.append(
-                    f"[FMEA_CP] 공정 {pnum}: FMEA의 {missing} 항목이 CP 특별특성에 누락"
-                )
-
-    # ── 검증 3: CP CC/SC → 자주검사 ────────────────────────────────────────────
-    if cp and inspection:
-        cp_cc_sc = _get_cc_sc_by_process(cp, "process_number")
-        insp_pnums = _get_process_numbers(inspection)
-        insp_cc_sc = _get_cc_sc_by_process(inspection, "process_number")
-
-        for pnum, cp_items in cp_cc_sc.items():
-            cp_sc_types = {item.split(":")[0] for item in cp_items}
-            insp_items = insp_cc_sc.get(pnum, [])
-            insp_sc_types = {item.split(":")[0] for item in insp_items}
-
-            if pnum not in insp_pnums:
-                issues.append(
-                    f"[CP_INSP] 공정 {pnum}: CP의 CC/SC 항목이 있지만 자주검사에 공정 없음"
-                )
-            else:
-                missing = cp_sc_types - insp_sc_types
-                if missing:
-                    issues.append(
-                        f"[CP_INSP] 공정 {pnum}: CP의 {missing} 항목이 자주검사에 누락"
-                    )
+    # ── 검증 2: 특별특성 동일성 (CP·자주검사) ───────────────────────────────────
+    char_targets = [
+        (cp, "[FMEA_CP]", "CP"),
+        (inspection, "[CP_INSP]", "자주검사"),
+    ]
+    for doc, label, name in char_targets:
+        if doc is None:
+            continue
+        missing = spine_cids - _char_ids(doc)
+        if missing:
+            ids = ", ".join(sorted(missing))
+            issues.append(f"{label} {name}에 누락·치환된 특별특성(char_id): {ids}")
 
     return issues
