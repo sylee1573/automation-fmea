@@ -11,12 +11,6 @@
     "source": "자동차 부품 제조 현장 경험 및 공개 자료 기반 수동 작성",
     "updated": "2026-04-25"
   },
-  "고객사_CSR_요구사항 [수동생성]": {
-    "hash": "manual",
-    "wiki_file": "고객사_CSR_요구사항_wiki.md",
-    "source": "PPAP/APQP 공개 가이드 및 협력사 교육 자료 기반 수동 작성",
-    "updated": "2026-04-25"
-  },
   "IATF16949_FMEA_관련조항 [수동생성]": {
     "hash": "manual",
     "wiki_file": "IATF16949_FMEA_관련조항_wiki.md",
