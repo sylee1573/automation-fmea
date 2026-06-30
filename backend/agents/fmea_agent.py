@@ -201,9 +201,9 @@ async def generate(
         "text": user_prompt,
     })
 
-    msg = await client.messages.create(
+    async with client.messages.stream(
         model=MODEL,
-        max_tokens=8192,
+        max_tokens=64000,
         system=[{
             "type": "text",
             "text": SYSTEM_PROMPT,
@@ -211,7 +211,8 @@ async def generate(
         }],
         messages=[{"role": "user", "content": content_blocks}],
         extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
-    )
+    ) as stream:
+        msg = await stream.get_final_message()
 
     _log_cache_usage(msg.usage, "FMEA")
     return _enforce_rpn(_parse_json(msg.content[0].text))

@@ -19,9 +19,20 @@ uvicorn_err.txt
 vite_out.txt
 vite_err.txt
 
-# Output files
-backend/output/
+# Output files — 생성 Excel은 최상위 output/, scratch_out/ 에 저장됨
+/output/
+scratch_out/
 poc/output/
+
+# backend/output 는 소스 패키지 — 런타임 산출물만 무시 (소스는 추적)
+backend/output/templates/*
+!backend/output/templates/.gitkeep
+backend/output/profiles/*.json
+!backend/output/profiles/default.json
+
+# 로컬 Vector DB (색인 데이터)
+data/chroma/*
+!data/chroma/.gitkeep
 
 # Env / secrets
 .env

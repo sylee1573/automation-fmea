@@ -15,6 +15,26 @@ export interface GenerateResponse {
   task_id: string
 }
 
+export interface TemplateInfo {
+  customer: string
+  profile_file: string
+  template_file: string
+  sheet: string
+  detected_fields: string[]
+}
+
+export interface TemplateUploadResponse {
+  ok: boolean
+  customer: string
+  message: string
+  detail: {
+    sheet?: string
+    data_start_row?: number
+    detected_fields?: string[]
+    meta_cells?: Record<string, string>
+  }
+}
+
 export interface ProgressEvent {
   type: 'progress' | 'done' | 'error' | 'heartbeat'
   step?: string
@@ -50,6 +70,23 @@ export const api = {
     if (processSheet) form.append('process_sheet', processSheet)
     return fetch(`${BASE}/upload`, { method: 'POST', body: form }).then(r => r.json())
   },
+
+  // ── 고객사 출력양식 ────────────────────────────────────────
+  uploadTemplate: (file: File, customer: string): Promise<TemplateUploadResponse> => {
+    const form = new FormData()
+    form.append('file', file)
+    form.append('customer', customer)
+    return fetch(`${BASE}/template/upload`, { method: 'POST', body: form }).then(r => {
+      if (!r.ok) return r.json().then(e => { throw new Error(e.detail || '양식 등록 실패') })
+      return r.json()
+    })
+  },
+
+  listTemplates: (): Promise<{ templates: TemplateInfo[] }> =>
+    fetch(`${BASE}/template/list`).then(r => r.json()),
+
+  deleteTemplate: (customer: string): Promise<{ ok: boolean }> =>
+    fetch(`${BASE}/template/${encodeURIComponent(customer)}`, { method: 'DELETE' }).then(r => r.json()),
 
   updateSession: (
     sessionId: string,

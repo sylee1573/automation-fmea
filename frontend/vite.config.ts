@@ -14,6 +14,7 @@ export default defineConfig({
       '/chat': 'http://localhost:8000',
       '/license': 'http://localhost:8000',
       '/session': 'http://localhost:8000',
+      '/template': 'http://localhost:8000',
     },
   },
   build: {

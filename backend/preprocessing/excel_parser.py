@@ -30,7 +30,7 @@ COLUMN_MAP: dict[str, list[str]] = {
     ],
     "failure_mode": [
         "고장유형", "고장 유형", "불량유형", "불량 유형",
-        "failure mode", "fm", "고장모드",
+        "failure mode", "fm", "고장모드", "고장형태", "잠재적 고장형태",
     ],
     "effect": [
         "고장 영향", "고장영향", "영향", "effect",
@@ -54,6 +54,7 @@ COLUMN_MAP: dict[str, list[str]] = {
     "prevention_controls": [
         "예방관리", "예방 관리", "관리방법", "현 관리방법(예방)",
         "prevention controls", "예방조치", "예방 관리\n(PC)", "pc",
+        "현 공정관리", "공정관리",
     ],
     "detection_controls": [
         "검출관리", "검출 관리", "현 관리방법(검출)",
@@ -80,6 +81,20 @@ def _normalize_text(v) -> str:
     return str(v).strip().replace("\n", " ")
 
 
+def _compact(s: str) -> str:
+    """공백·점·슬래시 제거 — 세로텍스트(심\\n각\\n도) / 점표기(R.P.N.) 헤더 매칭용"""
+    return s.replace(" ", "").replace(".", "").replace("/", "")
+
+
+def _header_matches(header_val: str, keyword: str) -> bool:
+    """헤더 셀이 키워드와 매칭되는지 (일반 + 공백/점 제거 후 비교)"""
+    h, k = header_val.lower(), keyword.lower()
+    if k in h or h in k:
+        return True
+    hc, kc = _compact(h), _compact(k)
+    return bool(hc) and bool(kc) and (kc in hc or hc in kc)
+
+
 def build_value_map(ws) -> dict[tuple, any]:
     """병합 셀 포함 전체 셀 값 맵 (row, col) → value"""
     value_map: dict[tuple, any] = {}
@@ -102,17 +117,24 @@ def build_value_map(ws) -> dict[tuple, any]:
 
 
 def detect_header_row(value_map: dict, max_scan: int = 15) -> int:
-    """FMEA 컬럼 키워드가 가장 많이 매칭되는 행 번호 반환"""
-    all_keywords = {kw.lower() for kws in COLUMN_MAP.values() for kw in kws}
+    """FMEA 표준 필드가 가장 많이(서로 다른 종류로) 매칭되는 행 번호 반환.
+
+    서로 다른 필드 수로 점수를 매겨, 동일 제목이 여러 칸에 병합된 타이틀 행
+    (예: MTK 양식 R2 '잠재적 고장형태 및 영향분석')이 헤더로 오인되지 않게 한다.
+    """
     max_col = max((c for _, c in value_map), default=1)
 
     best_row, best_score = 1, 0
     for r in range(1, max_scan + 1):
-        score = 0
+        matched_fields = set()
         for c in range(1, max_col + 1):
-            val = _normalize_text(value_map.get((r, c), "")).lower()
-            if val and any(kw in val for kw in all_keywords):
-                score += 1
+            val = _normalize_text(value_map.get((r, c), ""))
+            if not val:
+                continue
+            for field, keywords in COLUMN_MAP.items():
+                if any(_header_matches(val, kw) for kw in keywords):
+                    matched_fields.add(field)
+        score = len(matched_fields)
         if score > best_score:
             best_score, best_row = score, r
 
@@ -125,12 +147,12 @@ def map_columns(value_map: dict, header_row: int) -> dict[str, int]:
     col_to_field: dict[str, int] = {}
 
     for c in range(1, max_col + 1):
-        header_val = _normalize_text(value_map.get((header_row, c), "")).lower()
+        header_val = _normalize_text(value_map.get((header_row, c), ""))
         if not header_val:
             continue
         for field, keywords in COLUMN_MAP.items():
             for kw in keywords:
-                if kw.lower() in header_val or header_val in kw.lower():
+                if _header_matches(header_val, kw):
                     if field not in col_to_field:  # 첫 매칭만 사용
                         col_to_field[field] = c
                     break
@@ -172,6 +194,21 @@ def extract_rows(
     return rows
 
 
+def _select_fmea_sheet(wb):
+    """워크북에서 FMEA 컬럼이 가장 많이 잡히는 시트 선택.
+    반환: (worksheet, value_map, header_row, col_map)"""
+    best = None  # (score, ws, value_map, header_row, col_map)
+    for ws in wb.worksheets:
+        value_map = build_value_map(ws)
+        header_row = detect_header_row(value_map)
+        col_map = map_columns(value_map, header_row)
+        score = len(col_map)
+        if best is None or score > best[0]:
+            best = (score, ws, value_map, header_row, col_map)
+    _, ws, value_map, header_row, col_map = best
+    return ws, value_map, header_row, col_map
+
+
 def parse_fmea_excel(file_path: str) -> dict:
     """
     FMEA Excel 파일 파싱.
@@ -189,12 +226,10 @@ def parse_fmea_excel(file_path: str) -> dict:
     except Exception as e:
         return {"error": f"파일 열기 실패: {e}"}
 
-    ws = wb.active
-    value_map = build_value_map(ws)
+    # 여러 시트 중 FMEA 헤더가 가장 잘 매칭되는 시트 선택
+    # (MTK 양식처럼 active 시트가 PFD인 경우 대비)
+    ws, value_map, header_row, col_map = _select_fmea_sheet(wb)
     max_row = ws.max_row or 1
-
-    header_row = detect_header_row(value_map)
-    col_map = map_columns(value_map, header_row)
 
     # 필수 컬럼 누락 경고
     required = ["failure_mode", "S", "O", "D"]

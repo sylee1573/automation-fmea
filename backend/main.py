@@ -184,6 +184,56 @@ async def upload_files(
     }
 
 
+@app.post("/template/upload")
+async def upload_template(
+    file: UploadFile = File(...),
+    customer: str = Form(...),
+):
+    """고객사 FMEA 양식(.xlsx/.xlsm) 업로드 → 출력 프로파일 자동 생성.
+
+    이후 같은 고객사명으로 생성하면 FMEA가 이 양식 그대로 출력된다.
+    """
+    from .output.template_profile import save_uploaded_template
+
+    if not customer.strip():
+        raise HTTPException(status_code=400, detail="고객사명을 입력해주세요.")
+    content = await file.read()
+    try:
+        result = await asyncio.to_thread(
+            save_uploaded_template, content, file.filename or "form.xlsx", customer.strip()
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"양식 분석 오류: {e}")
+
+    fields = result.get("detected_fields", [])
+    return {
+        "ok": True,
+        "customer": result["customer"],
+        "message": (
+            f"'{result['customer']}' 양식 등록 완료 — 시트 '{result.get('sheet','')}', "
+            f"{len(fields)}개 컬럼 자동 인식. 이 고객사로 생성 시 FMEA가 이 양식으로 출력됩니다."
+        ),
+        "detail": result,
+    }
+
+
+@app.get("/template/list")
+def list_uploaded_templates():
+    from .output.template_profile import list_templates
+    return {"templates": list_templates()}
+
+
+@app.delete("/template/{customer}")
+def delete_uploaded_template(customer: str):
+    from .output.template_profile import delete_template
+    removed = delete_template(customer)
+    if not removed:
+        raise HTTPException(status_code=404, detail="해당 고객사 양식을 찾을 수 없습니다.")
+    return {"ok": True, "customer": customer}
+
+
 @app.post("/session/update")
 def update_session(
     session_id: str = Form(...),
@@ -272,6 +322,37 @@ async def stream_progress(task_id: str):
     )
 
 
+def _retrieve_similar_cases(process_data: dict) -> str:
+    """사내 기존 FMEA Vector DB에서 유사 사례 검색 → 프롬프트 주입 텍스트 반환.
+
+    RAG 스택(chromadb/sentence-transformers) 미설치, DB 비어있음, 임의 오류 등
+    어떤 경우에도 빈 문자열을 반환해 생성이 정상 진행되도록 한다(RAG는 부가 기능).
+    """
+    try:
+        import sys as _sys
+        _backend = str(Path(__file__).parent)
+        if _backend not in _sys.path:
+            _sys.path.insert(0, _backend)
+        from rag.retriever import search, format_for_prompt
+
+        customer = (process_data.get("customer") or "").strip() or "default"
+        query = " ".join(
+            str(process_data.get(k, "") or "")
+            for k in ("part_name", "part_number", "process_type")
+        ).strip()
+        if not query:
+            query = (process_data.get("drawing_text") or "")[:300]
+        if not query.strip():
+            return ""
+
+        results = search(query=query, customer_id=customer, n_results=5)
+        if not results:
+            return ""
+        return format_for_prompt(results, max_results=3)
+    except Exception:
+        return ""
+
+
 async def _run_generation(task_id: str, session_id: str, options: GenerationOptions):
     queue = _task_queues.get(task_id)
     if not queue:
@@ -295,12 +376,16 @@ async def _run_generation(task_id: str, session_id: str, options: GenerationOpti
 
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+        await on_progress("rag", "검색 중")
+        similar_cases = await asyncio.to_thread(_retrieve_similar_cases, process_data)
+        await on_progress("rag", "완료", found=bool(similar_cases))
+
         result = await run_sequential(
             process_data=process_data,
             options=options,
             api_key=api_key,
             wiki_rules=load_wiki_rules(),
-            similar_cases="",
+            similar_cases=similar_cases,
             output_dir=str(OUTPUT_DIR),
             generate_excel=True,
             progress_callback=on_progress,

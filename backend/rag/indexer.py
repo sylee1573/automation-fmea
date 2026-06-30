@@ -94,6 +94,75 @@ def index_file(collection, record: dict, customer_id: str) -> tuple[int, int]:
     return len(texts), len(rows) - len(texts)
 
 
+# ─── 단일 파일 직접 색인 (CSV 불필요) ─────────────────────────────────────────
+
+def index_single_file(
+    file_path: str,
+    customer_id: str,
+    factory_type: str = "",
+    process_type: str = "",
+    quality_grade: str = "A",
+    db_path: str = None,
+    reset: bool = False,
+) -> dict:
+    """FMEA Excel 1개를 파싱하여 곧바로 Vector DB에 색인.
+
+    S/O/D 숫자가 없는 행(헤더/페이지구분 행)을 거르고, 동일 텍스트(병합 표시행)는
+    중복 제거한다. 색인된 문서 수 등 요약 dict 반환.
+    """
+    parsed = parse_fmea_excel(file_path)
+    if "error" in parsed:
+        return {"error": parsed["error"], "indexed": 0}
+
+    rows = parsed.get("rows", [])
+    texts, ids, metadatas = [], [], []
+    seen: set[str] = set()
+
+    for idx, row in enumerate(rows):
+        # 실제 데이터 행만: 심각도(S)가 숫자인 행
+        if row.get("S") is None:
+            continue
+        text = row_to_text(row)
+        if not text.replace("|", "").strip() or text in seen:
+            continue
+        seen.add(text)
+
+        texts.append(text)
+        ids.append(make_doc_id(file_path, idx))
+        metadatas.append({
+            "file_path": file_path,
+            "customer_id": customer_id,
+            "factory_type": factory_type,
+            "process_type": process_type,
+            "quality_grade": quality_grade,
+            "process_step": str(row.get("process_step") or ""),
+            "failure_mode": str(row.get("failure_mode") or ""),
+            "S": str(row.get("S") or ""),
+            "RPN": str(row.get("rpn_ap") or ""),
+        })
+
+    client = get_client(db_path)
+    if reset:
+        try:
+            delete_collection(client, customer_id)
+        except Exception:
+            pass
+    collection = get_collection(client, customer_id)
+
+    if texts:
+        embeddings = embed_texts(texts)
+        collection.upsert(ids=ids, embeddings=embeddings, documents=texts, metadatas=metadatas)
+
+    return {
+        "file": Path(file_path).name,
+        "customer_id": customer_id,
+        "parsed_rows": len(rows),
+        "indexed": len(texts),
+        "skipped": len(rows) - len(texts),
+        "db_total": collection.count(),
+    }
+
+
 # ─── 메인 인덱싱 파이프라인 ───────────────────────────────────────────────────
 
 def run_indexer(

@@ -5,6 +5,7 @@ import ChatInterface from './components/ChatInterface'
 import FileUpload from './components/FileUpload'
 import GenerationOptions from './components/GenerationOptions'
 import ProgressBar, { buildInitialSteps, type ProgressStep } from './components/ProgressBar'
+import TemplateUpload from './components/TemplateUpload'
 
 type AppState = 'idle' | 'uploading' | 'ready' | 'generating' | 'done' | 'error'
 
@@ -220,12 +221,17 @@ export default function App() {
                     <input className="input" value={partNumber} onChange={e => setPartNumber(e.target.value)} placeholder="예) FSB-001" />
                   </div>
                 </div>
-                <div className="input-group" style={{ marginTop: 8, marginBottom: 0 }}>
-                  <label className="input-label">고객사</label>
-                  <input className="input" value={customer} onChange={e => setCustomer(e.target.value)} placeholder="예) 현대자동차" />
-                </div>
+                <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 8 }}>
+                  고객사는 위 “고객사 출력양식” 칸에서 설정됩니다{customer ? `: ${customer}` : ''}
+                </p>
               </div>
             )}
+
+            {/* 고객사 출력양식 */}
+            <div className="panel-section">
+              <div className="panel-section-title">고객사 출력양식 (선택)</div>
+              <TemplateUpload customer={customer} onCustomerChange={setCustomer} />
+            </div>
 
             {/* 생성 옵션 */}
             <div className="panel-section">

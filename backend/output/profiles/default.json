@@ -1,0 +1,96 @@
+{
+  "company": "default",
+  "renderer": "config",
+  "scoring": "rpn",
+  "language": "ko",
+  "fmea": {
+    "title": "PFMEA",
+    "standard": "AIAG FMEA 4th Ed. (RPN 방식)",
+    "header_color": "2E75B6",
+    "row_height": 48,
+    "sections": [
+      ["구조 분석", 1, 5, "2E75B6"],
+      ["고장 분석", 6, 11, "ED7D31"],
+      ["위험도 분석", 12, 15, "70AD47"],
+      ["개선 조치", 16, 23, "7030A0"]
+    ],
+    "columns": [
+      {"label": "번호", "field": "process_number", "width": 5},
+      {"label": "공정 단계", "field": "process_step", "width": 12},
+      {"label": "작업 요소", "field": "process_work_element", "width": 14},
+      {"label": "기능/요구사항", "field": "function", "width": 18},
+      {"label": "특별\n특성", "field": "special_characteristic", "width": 6},
+      {"label": "고장 영향\n(최종 사용자)", "field": "effect_end_user", "width": 20},
+      {"label": "S", "field": "S", "width": 4},
+      {"label": "고장 영향\n(제조)", "field": "effect_manufacturing", "width": 16},
+      {"label": "고장 유형", "field": "failure_mode", "width": 18},
+      {"label": "고장 원인", "field": "cause", "width": 20},
+      {"label": "O", "field": "O", "width": 4},
+      {"label": "예방 관리\n(PC)", "field": "prevention_controls", "width": 18},
+      {"label": "검출 관리\n(DC)", "field": "detection_controls", "width": 18},
+      {"label": "D", "field": "D", "width": 4},
+      {"label": "RPN", "field": "RPN", "width": 6},
+      {"label": "권고 조치", "field": "recommended_action", "width": 22},
+      {"label": "책임자/\n목표일", "field": "_resp_date", "width": 16},
+      {"label": "현황", "field": "status", "width": 8},
+      {"label": "조치 내용", "field": "action_taken", "width": 18},
+      {"label": "S*", "field": "revised_S", "width": 4},
+      {"label": "O*", "field": "revised_O", "width": 4},
+      {"label": "D*", "field": "revised_D", "width": 4},
+      {"label": "RPN*", "field": "revised_RPN", "width": 6}
+    ]
+  },
+  "cp": {
+    "title": "관리계획서 (Control Plan)",
+    "standard": "AIAG APQP & Control Plan",
+    "header_color": "375623",
+    "row_height": 42,
+    "columns": [
+      {"label": "번호", "field": "process_number", "width": 5},
+      {"label": "공정명", "field": "process_name", "width": 14},
+      {"label": "설비", "field": "machine", "width": 14},
+      {"label": "특성\n구분", "field": "characteristic_type", "width": 6},
+      {"label": "특성명", "field": "characteristic_name", "width": 18},
+      {"label": "특별\n특성", "field": "special_characteristic", "width": 6},
+      {"label": "관리 규격", "field": "specification", "width": 18},
+      {"label": "측정 방법", "field": "measurement_method", "width": 20},
+      {"label": "샘플\n크기", "field": "sample_size", "width": 7},
+      {"label": "주기", "field": "frequency", "width": 10},
+      {"label": "관리 방법", "field": "control_method", "width": 16},
+      {"label": "이상 조치", "field": "reaction_plan", "width": 20}
+    ]
+  },
+  "work_standard": {
+    "title": "작업표준서",
+    "standard": "",
+    "header_color": "833C00",
+    "row_height": 42,
+    "columns": [
+      {"label": "번호", "field": "process_number", "width": 5},
+      {"label": "공정명", "field": "process_name", "width": 14},
+      {"label": "단계\n번호", "field": "step_number", "width": 5},
+      {"label": "작업 내용", "field": "work_content", "width": 24},
+      {"label": "핵심 사항", "field": "key_point", "width": 22},
+      {"label": "이유/근거", "field": "reason", "width": 20},
+      {"label": "공구/설비", "field": "tool_equipment", "width": 16},
+      {"label": "안전 주의", "field": "safety", "width": 16}
+    ]
+  },
+  "inspection": {
+    "title": "자주검사항목",
+    "standard": "",
+    "header_color": "7B3F9E",
+    "row_height": 40,
+    "columns": [
+      {"label": "번호", "field": "process_number", "width": 5},
+      {"label": "공정명", "field": "process_name", "width": 14},
+      {"label": "검사 항목", "field": "inspection_item", "width": 20},
+      {"label": "특별\n특성", "field": "special_characteristic", "width": 6},
+      {"label": "관리 규격", "field": "specification", "width": 18},
+      {"label": "측정 도구", "field": "measurement_tool", "width": 18},
+      {"label": "샘플\n크기", "field": "sample_size", "width": 7},
+      {"label": "주기", "field": "frequency", "width": 10},
+      {"label": "기록 방법", "field": "record_method", "width": 16}
+    ]
+  }
+}
