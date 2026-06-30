@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>시연참가업체 모집 카드뉴스 / 포스터</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --navy:#1e3a5f; --navy-deep:#15293f; --ink:#16202f;
+  --amber:#e07000; --amber-deep:#bd5e00; --amber-on-navy:#ffae57;
+  --paper:#eef1f6; --surface:#ffffff;
+  --body:#3f4a5e; --muted:#5b6678;
+  --line:#dde3ec; --line-strong:#c6cfdb;
+  --r:14px; --r-lg:20px;
+  --shadow:0 1px 2px rgba(20,40,70,.06), 0 8px 28px rgba(20,40,70,.07);
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:'Pretendard Variable',Pretendard,'Malgun Gothic','Apple SD Gothic Neo',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:var(--paper); color:var(--body);
+  font-size:15px; line-height:1.6; padding:26px 16px 48px;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  word-break:keep-all; overflow-wrap:anywhere;
+}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+
+/* ── 안내 + 도구 막대 ─────────────────────────────────── */
+.note{font-size:12px;color:#5f6b7d;text-align:center;line-height:1.7}
+.note b{color:#3f4a5e}
+
+/* ── 수정 패널 (인쇄·캡처 시 자동 숨김) ───────────────── */
+.editor{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+  box-shadow:var(--shadow);padding:22px 22px 20px}
+.editor .et{display:flex;align-items:baseline;gap:9px;margin-bottom:3px}
+.editor .et h3{font-size:16px;font-weight:700;color:var(--ink)}
+.editor .et span{font-size:12px;color:#626d80}
+.editor .hint{font-size:12.5px;color:#5b6678;line-height:1.65;margin-bottom:16px}
+.editor .hint .req{color:var(--amber-deep);font-weight:700}
+.editor .grid{display:grid;grid-template-columns:1fr 1fr;gap:13px 16px}
+.editor .row{display:flex;flex-direction:column;gap:6px}
+.editor .row.full{grid-column:1/-1}
+.editor label{font-size:12.5px;font-weight:700;color:#34404f}
+.editor label .ex{font-weight:500;color:#6a7486;margin-left:6px}
+.editor input{font-family:inherit;font-size:14px;color:var(--ink);background:#fbfcfe;
+  border:1.5px solid var(--line-strong);border-radius:10px;padding:11px 13px;width:100%;
+  outline:none;transition:border-color .15s var(--ease),box-shadow .15s var(--ease)}
+.editor input::placeholder{color:#6b7686}
+.editor input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,58,95,.12)}
+.editor .tools{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.btn{font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;border-radius:10px;
+  padding:11px 17px;border:1.5px solid var(--line-strong);background:#fff;color:#34404f;
+  transition:background .15s var(--ease),border-color .15s,transform .12s,box-shadow .15s}
+.btn:hover{border-color:var(--navy);color:var(--navy);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.solid{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.solid:hover{background:var(--navy-deep);color:#fff;box-shadow:0 6px 18px rgba(20,40,70,.18)}
+
+/* ── 슬라이드 공통 ───────────────────────────────────── */
+.slide{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+  box-shadow:var(--shadow);padding:34px 32px;position:relative;overflow:hidden}
+.ey{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;
+  color:var(--amber-deep);margin-bottom:14px}
+.ey::before{content:"";width:18px;height:2px;background:var(--amber);border-radius:2px}
+.h{font-size:clamp(21px,4.4vw,26px);font-weight:800;line-height:1.32;color:var(--ink);
+  letter-spacing:-.018em;text-wrap:balance}
+.sub{font-size:14.5px;color:var(--body);margin-top:12px;line-height:1.65}
+.idx{position:absolute;top:26px;right:30px;font-size:13px;font-weight:700;color:#7e899b;
+  letter-spacing:.02em}
+
+/* ── 1. 표지 (네이비 드렌치) ─────────────────────────── */
+.cover{background:var(--navy);border-color:var(--navy);color:#fff;padding:40px 34px 36px}
+.cover .brandline{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.cover .co{font-size:13px;font-weight:700;color:#aebfd6}
+.cover .pill{font-size:12px;font-weight:700;color:#0c1f33;background:var(--amber-on-navy);
+  padding:5px 12px;border-radius:999px}
+.cover h1{font-size:clamp(28px,6.6vw,40px);font-weight:800;line-height:1.22;color:#fff;
+  letter-spacing:-.022em;text-wrap:balance}
+.cover h1 .mk{color:var(--amber-on-navy)}
+.cover .lead{font-size:15px;color:#c4d2e6;margin-top:18px;line-height:1.66;max-width:34em}
+.cover .free{display:inline-flex;align-items:center;gap:9px;margin-top:26px;
+  font-size:15px;font-weight:800;color:#0c1f33;background:var(--amber);
+  padding:13px 22px;border-radius:12px}
+.cover .free .ar{font-size:17px}
+
+/* ── 2. 문제 ─────────────────────────────────────────── */
+.plist{list-style:none;margin-top:22px;display:flex;flex-direction:column}
+.plist li{font-size:15px;color:#36414f;line-height:1.55;padding:14px 0 14px 30px;
+  position:relative;border-top:1px solid var(--line)}
+.plist li:first-child{border-top:0}
+.plist li::before{content:"";position:absolute;left:4px;top:21px;width:9px;height:9px;
+  border:2px solid var(--amber);border-radius:50%}
+.plist li b{color:var(--ink);font-weight:700}
+
+/* ── 3. 해결: 플로우 + 산출물 ───────────────────────── */
+.flow{display:flex;align-items:stretch;gap:0;margin-top:22px;flex-wrap:wrap}
+.step{flex:1 1 140px;text-align:center;padding:4px 6px}
+.step .n{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+  border-radius:50%;background:var(--navy);color:#fff;font-size:13px;font-weight:800;margin-bottom:10px}
+.step .t{font-size:14.5px;color:var(--ink);font-weight:700;line-height:1.4}
+.step .d{font-size:12.5px;color:#6f7a8a;margin-top:4px}
+.sep{display:flex;align-items:center;justify-content:center;color:var(--line-strong);
+  font-size:18px;padding:0 2px;align-self:flex-start;margin-top:14px}
+.outs{margin-top:26px;border-top:1px solid var(--line)}
+.out{display:flex;align-items:baseline;gap:14px;padding:14px 2px;border-bottom:1px solid var(--line)}
+.out .tag{flex:0 0 116px;font-size:14px;font-weight:800;color:var(--navy);letter-spacing:-.01em}
+.out .desc{font-size:13.5px;color:#5b6678}
+.out .no{flex:0 0 22px;font-size:12px;font-weight:700;color:var(--amber-deep)}
+
+/* ── 4. 효과 ─────────────────────────────────────────── */
+.stat{display:flex;align-items:flex-end;gap:14px;margin-top:24px;padding-bottom:22px;
+  border-bottom:1px solid var(--line)}
+.stat .big{font-size:clamp(46px,11vw,64px);font-weight:800;color:var(--navy);
+  line-height:.92;letter-spacing:-.03em}
+.stat .big .u{font-size:.5em;color:var(--amber-deep);margin-left:2px}
+.stat .cap{font-size:15px;font-weight:700;color:var(--ink);padding-bottom:8px;line-height:1.4}
+.blist{list-style:none;margin-top:20px;display:flex;flex-direction:column;gap:15px}
+.blist li{display:flex;gap:13px;align-items:flex-start;font-size:14.5px;color:#3f4a5e;line-height:1.5}
+.blist li .ck{flex:0 0 22px;height:22px;border-radius:6px;background:#eaf0f7;color:var(--navy);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;margin-top:1px}
+.blist li b{color:var(--ink);font-weight:700}
+
+/* ── 5. 참여 (네이비 드렌치) ────────────────────────── */
+.cta{background:var(--navy);border-color:var(--navy);color:#fff;text-align:center;padding:38px 32px}
+.cta .ey{color:var(--amber-on-navy)}
+.cta .ey::before{background:var(--amber-on-navy)}
+.cta h2{font-size:clamp(22px,5vw,28px);font-weight:800;color:#fff;line-height:1.32;letter-spacing:-.02em}
+.cta .steps{font-size:14px;color:#c4d2e6;margin-top:14px;line-height:1.7}
+.fields{display:flex;flex-direction:column;gap:10px;max-width:420px;margin:22px auto 0;text-align:left}
+.fld{display:flex;align-items:baseline;gap:10px;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.16);border-radius:11px;padding:12px 15px}
+.fld .k{flex:0 0 76px;font-size:12.5px;font-weight:700;color:#9fb2cc}
+.fld .v{font-size:14px;font-weight:600;color:#eaf1fa;word-break:break-all}
+.apply{display:inline-flex;align-items:center;gap:9px;margin-top:24px;font-size:17px;font-weight:800;
+  color:#0c1f33;background:var(--amber);padding:15px 32px;border-radius:13px;text-decoration:none;
+  transition:background .15s var(--ease),transform .12s,box-shadow .15s}
+.apply:hover{background:var(--amber-on-navy);transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.28)}
+.fine{font-size:12px;color:#9fb2cc;margin-top:22px;line-height:1.7;max-width:46em;margin-left:auto;margin-right:auto}
+
+/* 빈 칸 강조 */
+.ph{color:var(--amber-deep);font-weight:700}
+.cover .ph,.cta .ph,.fld .ph{color:var(--amber-on-navy)}
+
+@media(max-width:560px){
+  .editor .grid{grid-template-columns:1fr}
+  .sep{width:100%;transform:rotate(90deg);margin:2px 0}
+  .out .tag{flex-basis:100px}
+}
+/* 인쇄 / PDF */
+@media print{
+  body{background:#fff;padding:0}
+  .note,.editor{display:none}
+  .wrap{gap:0;max-width:none}
+  .slide{box-shadow:none;border:none;border-radius:0;break-inside:avoid;page-break-inside:avoid;
+    page-break-after:always;padding:48px 44px}
+  .cover,.cta{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .step .n,.cover .pill,.cover .free,.apply,.fld{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+/* 캡처용 숨김 토글 */
+body.hide-editor .editor,body.hide-editor .note{display:none}
+@media(prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ✏️ 수정 패널 : 여기만 채우면 카드가 즉시 바뀝니다 -->
+  <div class="editor">
+    <div class="et"><h3>여기만 채우세요</h3><span>입력하면 카드에 바로 반영됩니다</span></div>
+    <p class="hint">실제 정보를 입력하면 아래 카드가 즉시 바뀝니다.
+      비워두면 <span class="req">주황색 안내문구</span>가 그대로 남습니다.
+      다 채운 뒤 인쇄·캡처하면 이 패널은 자동으로 사라집니다.</p>
+    <div class="grid">
+      <div class="row">
+        <label>회사명</label>
+        <input id="in-company" placeholder="예) (주)○○정밀">
+      </div>
+      <div class="row">
+        <label>모집기간</label>
+        <input id="in-period" placeholder="예) ~2026.07.31">
+      </div>
+      <div class="row full">
+        <label>신청 링크 <span class="ex">신청서 / 구글폼 주소</span></label>
+        <input id="in-link" placeholder="예) https://forms.gle/xxxx">
+      </div>
+      <div class="row">
+        <label>문의 연락처</label>
+        <input id="in-contact" placeholder="예) 010-0000-0000">
+      </div>
+      <div class="row">
+        <label>시연영상 <span class="ex">유튜브 주소</span></label>
+        <input id="in-video" placeholder="예) https://youtu.be/xxxx">
+      </div>
+    </div>
+    <div class="tools">
+      <button class="btn" id="btn-hide" type="button">패널 숨기기 (캡처용)</button>
+      <button class="btn solid" id="btn-print" type="button">인쇄 / PDF 저장</button>
+    </div>
+  </div>
+
+  <p class="note">
+    <b>시연참가업체 모집 카드뉴스 / 포스터</b><br>
+    카드별로 화면 캡처해 SNS·카카오톡에 올리거나, 인쇄(Ctrl+P)로 A4 포스터로 출력하세요.
+  </p>
+
+  <!-- 1. 표지 -->
+  <section class="slide cover">
+    <div class="brandline">
+      <span class="co"><span id="t-company" class="ph">[ 회사명 ]</span></span>
+      <span class="pill">무료 시연 · PoC</span>
+    </div>
+    <h1>야근의 주범, 품질 표준류 작성<br><span class="mk">이제 AI가 초안을 만듭니다</span></h1>
+    <p class="lead">도면(PDF)과 공정검토서(Excel)만 올리면
+       FMEA, 관리계획서, 작업표준서, 자주검사항목까지 한 번에 만듭니다.</p>
+    <span class="free">자사 도면 1건으로 무료 체험<span class="ar">→</span></span>
+  </section>
+
+  <!-- 2. 문제 -->
+  <section class="slide">
+    <span class="idx">01 / 04</span>
+    <span class="ey">이런 고민, 있으셨죠?</span>
+    <h2 class="h">신규 부품 하나에 표준류 한 세트,<br>매번 며칠씩 걸립니다.</h2>
+    <ul class="plist">
+      <li><b>FMEA, 관리계획서, 작업표준서, 자주검사</b> 4종을 매번 손으로 작성</li>
+      <li>숙련 엔지니어가 빠지면 표준류 품질이 들쑥날쑥</li>
+      <li>IATF 16949와 고객사 CSR을 반영하느라 매번 시간 소요</li>
+      <li>기존 사내 사례가 쌓여만 있고 재활용이 안 됨</li>
+    </ul>
+  </section>
+
+  <!-- 3. 해결 -->
+  <section class="slide">
+    <span class="idx">02 / 04</span>
+    <span class="ey">이렇게 바뀝니다</span>
+    <h2 class="h">업로드하고 대화하면, 표준류 4종이 만들어집니다</h2>
+    <div class="flow">
+      <div class="step"><div class="n">1</div><div class="t">업로드</div><div class="d">도면 PDF · 공정검토서 Excel</div></div>
+      <div class="sep">→</div>
+      <div class="step"><div class="n">2</div><div class="t">챗봇과 대화</div><div class="d">공장 · 공정 확인</div></div>
+      <div class="sep">→</div>
+      <div class="step"><div class="n">3</div><div class="t">4종 자동생성</div><div class="d">엔지니어 검토 · 승인</div></div>
+    </div>
+    <div class="outs">
+      <div class="out"><span class="no">A</span><span class="tag">FMEA</span><span class="desc">고장유형 및 영향분석</span></div>
+      <div class="out"><span class="no">B</span><span class="tag">Control Plan</span><span class="desc">관리계획서</span></div>
+      <div class="out"><span class="no">C</span><span class="tag">작업표준서</span><span class="desc">작업 표준 문서</span></div>
+      <div class="out"><span class="no">D</span><span class="tag">자주검사항목</span><span class="desc">자주검사 리스트</span></div>
+    </div>
+  </section>
+
+  <!-- 4. 효과 -->
+  <section class="slide">
+    <span class="idx">03 / 04</span>
+    <span class="ey">참여하면 좋은 점</span>
+    <h2 class="h">시간은 줄이고, 노하우는 남깁니다</h2>
+    <div class="stat">
+      <div class="big">80<span class="u">%↓</span></div>
+      <div class="cap">표준류 작성 시간 단축을<br>자사 도면으로 직접 체험</div>
+    </div>
+    <ul class="blist">
+      <li><span class="ck">✓</span><span>숙련 엔지니어의 노하우를 AI가 학습해 <b>초안에 반영</b></span></li>
+      <li><span class="ck">✓</span><span><b>AIAG · IATF 16949</b> 기준과 고객사 CSR을 자동 반영</span></li>
+      <li><span class="ck">✓</span><span>고객사별 <b>데이터 완전 격리</b>, 시연 목적 외 미사용</span></li>
+    </ul>
+  </section>
+
+  <!-- 5. 참여 -->
+  <section class="slide cta">
+    <span class="ey">참여 방법 · 전액 무료</span>
+    <h2>자사 도면 1건이면 충분합니다</h2>
+    <p class="steps">신청서 제출 → 도면 1건 제출 → 표준류 4종 시연 → 결과 검토 · 피드백</p>
+    <div class="fields">
+      <div class="fld"><span class="k">신청 링크</span><span class="v"><span id="t-link" class="ph">[ 신청 링크 ]</span></span></div>
+      <div class="fld"><span class="k">문의</span><span class="v"><span id="t-contact" class="ph">[ 연락처 ]</span></span></div>
+      <div class="fld"><span class="k">시연영상</span><span class="v"><span id="t-video" class="ph">[ 유튜브 ]</span></span></div>
+    </div>
+    <a class="apply" id="t-apply" href="#" rel="noopener">지금 시연 신청하기 <span>→</span></a>
+    <p class="fine">
+      대상: 자동차 부품 1·2차 협력사(프레스 · 열처리 · 용접 · 가공 · 도장 · 조립 등) 품질 · 생산기술 담당 ·
+      모집기간 <span id="t-period" class="ph">[ ~YYYY.MM.DD ]</span><br>
+      AI는 초안까지 만들고, 최종 검토 · 승인은 담당 엔지니어가 진행합니다.
+    </p>
+  </section>
+
+</div>
+
+<script>
+// ── 입력칸 → 카드 실시간 반영 ──────────────────────────────
+(function(){
+  function bind(inputId, targetId, placeholder, onApply){
+    var inp = document.getElementById(inputId);
+    var tgt = document.getElementById(targetId);
+    function update(){
+      var v = inp.value.trim();
+      if(v){ tgt.textContent = v; tgt.classList.remove('ph'); }
+      else { tgt.textContent = placeholder; tgt.classList.add('ph'); }
+      if(onApply) onApply(v);
+    }
+    inp.addEventListener('input', update);
+  }
+  bind('in-company','t-company','[ 회사명 ]');
+  bind('in-period', 't-period', '[ ~YYYY.MM.DD ]');
+  bind('in-contact','t-contact','[ 연락처 ]');
+  bind('in-video',  't-video',  '[ 유튜브 ]');
+  bind('in-link',   't-link',   '[ 신청 링크 ]', function(v){
+    var btn = document.getElementById('t-apply');
+    if(v){ btn.setAttribute('href', v); btn.setAttribute('target','_blank'); }
+    else { btn.setAttribute('href', '#'); btn.removeAttribute('target'); }
+  });
+  document.getElementById('btn-hide').addEventListener('click', function(){
+    document.body.classList.toggle('hide-editor');
+  });
+  document.getElementById('btn-print').addEventListener('click', function(){ window.print(); });
+})();
+</script>
+</body>
+</html>
