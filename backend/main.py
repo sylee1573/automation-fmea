@@ -267,6 +267,7 @@ async def start_generation(
     cp: str = Form("true"),
     work_standard: str = Form("true"),
     inspection: str = Form("true"),
+    language: str = Form("ko"),
 ):
     if session_id not in _sessions:
         raise HTTPException(404, "세션 없음 — 먼저 파일을 업로드해주세요")
@@ -289,7 +290,8 @@ async def start_generation(
     queue: asyncio.Queue = asyncio.Queue()
     _task_queues[task_id] = queue
 
-    asyncio.create_task(_run_generation(task_id, session_id, options))
+    lang = "en" if language.lower() in ("en", "english", "영문") else "ko"
+    asyncio.create_task(_run_generation(task_id, session_id, options, lang))
     return {"task_id": task_id}
 
 
@@ -353,7 +355,7 @@ def _retrieve_similar_cases(process_data: dict) -> str:
         return ""
 
 
-async def _run_generation(task_id: str, session_id: str, options: GenerationOptions):
+async def _run_generation(task_id: str, session_id: str, options: GenerationOptions, language: str = "ko"):
     queue = _task_queues.get(task_id)
     if not queue:
         return
@@ -389,6 +391,7 @@ async def _run_generation(task_id: str, session_id: str, options: GenerationOpti
             output_dir=str(OUTPUT_DIR),
             generate_excel=True,
             progress_callback=on_progress,
+            language=language,
         )
 
         for file_path in result.get("output_files", []):

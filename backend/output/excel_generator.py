@@ -35,6 +35,23 @@ _DOC_PREFIX = {
     "inspection": "INSP",
 }
 
+# FMEA는 customer 무관하게 항상 MTK 양식으로 출력한다 (국문/영문만 분기).
+_FMEA_TEMPLATE = {
+    "ko": "templates/mtk.xlsm",
+    "en": "templates/mtk_en.xlsm",
+}
+
+
+def _fmea_profile(language: str) -> dict:
+    """FMEA 전용 강제 프로파일 — MTK 양식(template 렌더러), 언어로 파일만 교체."""
+    mtk = load_profile("MTK")
+    tpl = dict(mtk["template"]["fmea"])
+    tpl["path"] = _FMEA_TEMPLATE.get(language, _FMEA_TEMPLATE["ko"])
+    return {
+        "fmea": {**mtk["fmea"], "renderer": "template"},
+        "template": {"fmea": tpl},
+    }
+
 
 def generate_all(
     fmea: Optional[dict],
@@ -44,6 +61,7 @@ def generate_all(
     output_dir: str = "output",
     customer: str = "",
     profile: Optional[dict] = None,
+    language: str = "ko",
 ) -> list[Path]:
     """
     회사 프로파일에 맞춰 4종 Excel 파일 생성.
@@ -68,14 +86,18 @@ def generate_all(
         "inspection": inspection,
     }
 
+    fmea_profile = _fmea_profile(language)
+
     outputs: list[Path] = []
     for doc_type, data in docs.items():
         if not data:
             continue
-        doc_cfg = profile.get(doc_type, {})
-        renderer = doc_cfg.get("renderer") or profile.get("renderer", "config")
+        # FMEA는 customer 무관하게 MTK 양식 강제, 나머지는 고객 프로파일대로
+        use_profile = fmea_profile if doc_type == "fmea" else profile
+        doc_cfg = use_profile.get(doc_type, {})
+        renderer = doc_cfg.get("renderer") or use_profile.get("renderer", "config")
         ext = "xlsm" if renderer == "template" else "xlsx"
         path = _output_path(output_dir, _DOC_PREFIX[doc_type], data.get("part_number", ""), ext)
-        outputs.append(renderers.render(doc_type, data, profile, str(path)))
+        outputs.append(renderers.render(doc_type, data, use_profile, str(path)))
 
     return outputs

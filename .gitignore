@@ -25,10 +25,14 @@ scratch_out/
 poc/output/
 
 # backend/output 는 소스 패키지 — 런타임 산출물만 무시 (소스는 추적)
+# MTK 양식은 이제 모든 FMEA의 기본 출력 양식이므로 자산으로 추적한다.
 backend/output/templates/*
 !backend/output/templates/.gitkeep
+!backend/output/templates/mtk.xlsm
+!backend/output/templates/mtk_en.xlsm
 backend/output/profiles/*.json
 !backend/output/profiles/default.json
+!backend/output/profiles/mtk.json
 
 # 로컬 Vector DB (색인 데이터)
 data/chroma/*

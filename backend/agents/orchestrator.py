@@ -132,6 +132,7 @@ async def run_sequential(
     output_dir: str = None,
     generate_excel: bool = True,
     progress_callback=None,
+    language: str = "ko",
 ) -> dict:
     """
     4개 에이전트 순차 실행 후 Excel 생성.
@@ -336,6 +337,7 @@ async def run_sequential(
             inspection=result["inspection"],
             output_dir=str(out_dir),
             customer=process_data.get("customer", ""),
+            language=language,
         )
         result["output_files"] = [str(f) for f in output_files]
         await _notify("Excel", "completed", files=[Path(f).name for f in output_files])
