@@ -193,6 +193,7 @@ async def run_sequential(
             wiki_rules=wiki_rules,
             similar_cases=similar_cases,
             client=client,
+            language=language,
         )
         rows = len(result["fmea"].get("rows", []))
         high = sum(1 for r in result["fmea"]["rows"] if _is_high_rpn(r))

@@ -21,12 +21,21 @@ config 렌더러가 양식을 '코드로 그리는' 반면, 이 렌더러는 고
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 import openpyxl
 from openpyxl.styles import Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.pagebreak import RowBreak, ColBreak
 
 _TEMPLATE_BASE = Path(__file__).parent.parent  # backend/output
+
+# 점수 칸(S·O·D·RPN 등)은 폭이 좁으므로 줄바꿈 대신 자동 축소로 3자리도 표시.
+_NUMERIC_FIELDS = {
+    "S", "O", "D", "RPN",
+    "revised_S", "revised_O", "revised_D", "revised_RPN",
+}
 
 
 def _resolve(path_str: str) -> Path:
@@ -37,6 +46,21 @@ def _resolve(path_str: str) -> Path:
 def _thin_border() -> Border:
     s = Side(style="thin", color="BBBBBB")
     return Border(left=s, right=s, top=s, bottom=s)
+
+
+def _col_width(ws, col: int) -> float:
+    w = ws.column_dimensions[get_column_letter(col)].width
+    return w if w else 8.43
+
+
+def _est_lines(text: str, width: float) -> int:
+    """열 폭 대비 필요한 줄 수 근사 (한글은 폭 2로 계산, 명시적 개행 포함)."""
+    cap = max(width - 1.0, 1.0)
+    total = 0
+    for line in str(text).split("\n"):
+        units = sum(2 if ord(ch) > 0x2E80 else 1 for ch in line)
+        total += max(1, math.ceil(units / cap))
+    return total
 
 
 def render(doc_type: str, data: dict, profile: dict, output_path: str) -> Path:
@@ -59,21 +83,37 @@ def render(doc_type: str, data: dict, profile: dict, output_path: str) -> Path:
 
     columns: dict = {str(k): int(v) for k, v in tpl_cfg["columns"].items()}
     start = int(tpl_cfg.get("data_start_row", 2))
-    max_col = max(columns.values(), default=ws.max_column)
+    form_right = max(max(columns.values(), default=0), ws.max_column)  # 양식 전체 폭(U 등)
     border = _thin_border()
+
+    # 데이터 바로 위 2행(헤더)의 가로 병합 = 한 필드가 여러 열을 차지(예: 원인 G:H,
+    # 현관리 J:K, 권고조치 N:O). 같은 열 스팬을 데이터 행에도 적용해 세로쓰기 방지.
+    data_spans = [
+        (rng.min_col, rng.max_col)
+        for rng in ws.merged_cells.ranges
+        if rng.min_col < rng.max_col
+        and rng.min_row == start - 2 and rng.max_row == start - 1
+    ]
+    span_width = {a: sum(_col_width(ws, c) for c in range(a, b + 1)) for a, b in data_spans}
 
     # 데이터 영역(헤더 아래) 병합 해제 + 기존 내용 지우기
     for rng in list(ws.merged_cells.ranges):
         if rng.min_row >= start:
             ws.unmerge_cells(str(rng))
     for r in range(start, (ws.max_row or start) + 1):
-        for c in range(1, max_col + 1):
+        for c in range(1, form_right + 1):
             ws.cell(row=r, column=c).value = None
 
     # 데이터 채우기
     rows = data.get("rows", [])
     for i, row in enumerate(rows):
         r = start + i
+
+        # 양식 전체 폭에 격자 테두리 (병합 해제 후 내부 테두리 누락 방지)
+        for c in range(2, form_right + 1):
+            ws.cell(row=r, column=c).border = border
+
+        max_lines = 1
         for field, col in columns.items():
             val = row.get(field, "")
             # MTK처럼 예방/검출 관리가 한 칸인 경우: 예방이 비면 검출로 대체
@@ -84,8 +124,33 @@ def render(doc_type: str, data: dict, profile: dict, output_path: str) -> Path:
             if val in (None, ""):
                 continue
             cell = ws.cell(row=r, column=col, value=val)
-            cell.alignment = Alignment(vertical="center", wrap_text=True)
             cell.border = border
+            if field in _NUMERIC_FIELDS:
+                # 숫자 칸: 줄바꿈 대신 자동 축소(##·3자리 방지), 가운데 정렬
+                cell.alignment = Alignment(
+                    vertical="center", horizontal="center", shrink_to_fit=True
+                )
+            else:
+                cell.alignment = Alignment(vertical="center", wrap_text=True)
+                eff_w = span_width.get(col, _col_width(ws, col))
+                max_lines = max(max_lines, _est_lines(val, eff_w))
+
+        # 병합 스팬을 데이터 행에 적용 (값은 이미 왼쪽 열에 기록됨)
+        for a, b in data_spans:
+            ws.merge_cells(start_row=r, start_column=a, end_row=r, end_column=b)
+
+        # 내용 길이에 맞춰 행 높이 (한 줄 ≈ 15pt, 여백 6)
+        ws.row_dimensions[r].height = min(150, max(30, max_lines * 15 + 6))
+
+    # 데이터 아래 잔여 템플릿 행 삭제 → 빈 2~7페이지·테두리 잔재 제거
+    last = start + len(rows) - 1
+    if rows and ws.max_row > last:
+        ws.delete_rows(last + 1, ws.max_row - last)
+    # 수동 페이지 나눔 제거 + 인쇄영역을 실제 데이터 범위로
+    ws.row_breaks = RowBreak()
+    ws.col_breaks = ColBreak()
+    if rows:
+        ws.print_area = f"B2:{get_column_letter(form_right)}{last}"
 
     # 메타 셀 채우기 (품번/품명/차종 등)
     for cell_ref, field in (tpl_cfg.get("meta_cells") or {}).items():

@@ -114,6 +114,16 @@ PROMPT_TEMPLATE = """## 분석 대상
 }}
 ```"""
 
+# 해외 고객용: 내용 필드를 영어로 생성 (숫자·코드·부품번호는 유지)
+EN_DIRECTIVE = """
+
+## LANGUAGE REQUIREMENT
+Write ALL textual field values in ENGLISH: process_step, process_work_element,
+function, special_characteristic notes, effect_end_user, effect_manufacturing,
+failure_mode, cause, prevention_controls, detection_controls, recommended_action.
+Use standard AIAG PFMEA terminology. Keep part numbers, codes (CC/SC), and all
+numeric scores (S/O/D/RPN) unchanged."""
+
 
 def _build_scenario(process_data: dict) -> str:
     parts = []
@@ -160,6 +170,7 @@ async def generate(
     wiki_rules: str,
     similar_cases: str,
     client: anthropic.AsyncAnthropic,
+    language: str = "ko",
 ) -> dict:
     """
     PFMEA JSON 생성.
@@ -180,6 +191,8 @@ async def generate(
         scenario=scenario,
         similar_section=similar_section,
     )
+    if language == "en":
+        user_prompt += EN_DIRECTIVE
 
     content_blocks = []
 
